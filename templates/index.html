@@ -3,61 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voz Médica Pro - Sistema de Dictado</title>
+    <title>Voz Médica Pro - Panel de Control</title>
+    <!-- Librerías Críticas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        :root { --primary: #3498db; --secondary: #2ecc71; --danger: #e74c3c; --dark: #2c3e50; }
+        :root { --primario: #3498db; --exito: #2ecc71; --error: #e74c3c; --oscuro: #2c3e50; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .header { text-align: center; border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; }
-        .btn-mic { background: var(--danger); color: white; border: none; width: 70px; height: 70px; border-radius: 50%; font-size: 25px; cursor: pointer; transition: 0.3s; display: block; margin: 10px auto; }
-        .btn-mic.grabando { animation: pulse 1.5s infinite; background: #c0392b; }
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { transform: scale(1); } }
-        .grid-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .campo-box { background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
-        .campo-box label { font-weight: bold; color: var(--dark); display: block; margin-bottom: 5px; font-size: 13px; }
-        .resultado-texto { min-height: 30px; color: #555; word-wrap: break-word; }
-        .full-width { grid-column: span 2; }
+        .contenedor { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .encabezado { text-align: center; border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; }
+        .boton-mic { background: var(--error); color: white; border: none; width: 70px; height: 70px; border-radius: 50%; font-size: 25px; cursor: pointer; transition: 0.3s; display: block; margin: 10px auto; }
+        .boton-mic.grabando { animation: pulso 1.5s infinite; background: #c0392b; }
+        @keyframes pulso { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { transform: scale(1); } }
+        .cuadricula-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .caja-campo { background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+        .caja-campo label { font-weight: bold; color: var(--oscuro); display: block; margin-bottom: 5px; font-size: 13px; text-transform: uppercase; }
+        .resultado-texto { min-height: 30px; color: #555; word-wrap: break-word; font-weight: 500; }
+        .ancho-total { grid-column: span 2; }
         .acciones { margin-top: 30px; display: flex; flex-direction: column; gap: 10px; }
-        .btn-main { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; text-decoration: none; }
-        .btn-pdf { background: var(--primary); color: white; }
-        .btn-wa { background: var(--secondary); color: white; display: none; }
+        .btn-principal { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; text-decoration: none; }
+        .btn-pdf { background: var(--primario); color: white; }
+        .btn-wa { background: var(--exito); color: white; display: none; } /* Oculto hasta que se guarde */
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1 style="color: var(--dark); margin:0;">VOZ MÉDICA PRO</h1>
-        <p style="color: #7f8c8d;">Control de Consulta por Dictado</p>
+<div class="contenedor">
+    <div class="encabezado">
+        <h1 style="color: var(--oscuro); margin:0;">VOZ MÉDICA PRO</h1>
+        <p style="color: #7f8c8d;">Asistente de Consulta Inteligente</p>
     </div>
 
-    <button id="btn-dictar" class="btn-mic"><i class="fas fa-microphone"></i></button>
-    <p id="status" style="text-align:center; font-weight:bold; color:var(--danger);">Micrófono Desactivado</p>
+    <button id="btn-dictar" class="boton-mic"><i class="fas fa-microphone"></i></button>
+    <p id="estado" style="text-align:center; font-weight:bold; color:var(--error);">Micrófono Desactivado</p>
 
-    <div class="grid-campos">
-        <div class="campo-box"><label>PACIENTE:</label><div id="val-paciente" class="resultado-texto">---</div></div>
-        <div class="campo-box"><label>CÉDULA:</label><div id="val-cedula" class="resultado-texto">---</div></div>
-        <div class="campo-box full-width"><label>INFORME MÉDICO:</label><div id="val-informe" class="resultado-texto">---</div></div>
-        <div class="campo-box full-width"><label>RÉCIPE:</label><div id="val-recipe" class="resultado-texto">---</div></div>
-        <div class="campo-box full-width"><label>INDICACIONES:</label><div id="val-indicaciones" class="resultado-texto">---</div></div>
-        <div class="campo-box full-width"><label>ÓRDEN DE EXÁMENES:</label><div id="val-examenes" class="resultado-texto">---</div></div>
+    <div class="cuadricula-campos">
+        <div class="caja-campo"><label>Paciente:</label><div id="val-paciente" class="resultado-texto">---</div></div>
+        <div class="caja-campo"><label>Cédula:</label><div id="val-cedula" class="resultado-texto">---</div></div>
+        <div class="caja-campo ancho-total"><label>Informe Médico:</label><div id="val-informe" class="resultado-texto">---</div></div>
+        <div class="caja-campo ancho-total"><label>Récipe:</label><div id="val-recipe" class="resultado-texto">---</div></div>
+        <div class="caja-campo ancho-total"><label>Indicaciones:</label><div id="val-indicaciones" class="resultado-texto">---</div></div>
+        <div class="caja-campo ancho-total"><label>Orden de Exámenes:</label><div id="val-examenes" class="resultado-texto">---</div></div>
     </div>
 
     <div class="acciones">
-        <button onclick="guardarYDescargar()" class="btn-main btn-pdf">
-            <i class="fas fa-save"></i> GUARDAR Y GENERAR REPORTE PDF
+        <button onclick="ejecutarGuardadoYPdf()" class="btn-principal btn-pdf">
+            <i class="fas fa-save"></i> GUARDAR Y GENERAR REPORTE COMPLETO
         </button>
-        <a id="lnk-whatsapp" href="#" class="btn-main btn-wa" target="_blank">
-            <i class="fab fa-whatsapp"></i> ENVIAR REPORTE AL PACIENTE
+        <a id="btn-whatsapp" href="#" class="btn-principal btn-wa" target="_blank">
+            <i class="fab fa-whatsapp"></i> ENVIAR AL PACIENTE POR WHATSAPP
         </a>
     </div>
 </div>
 
 <script>
     const btn = document.getElementById('btn-dictar');
-    const status = document.getElementById('status');
+    const estado = document.getElementById('estado');
+    
+    // Configuración del Reconocimiento de Voz
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'es-ES';
     recognition.continuous = true;
@@ -67,21 +71,24 @@
         else { recognition.start(); }
     };
 
-    recognition.onstart = () => { btn.classList.add('grabando'); status.innerText = "ESCUCHANDO..."; };
-    recognition.onend = () => { btn.classList.remove('grabando'); status.innerText = "MICRÓFONO DESACTIVADO"; };
+    recognition.onstart = () => { btn.classList.add('grabando'); estado.innerText = "ESCUCHANDO..."; estado.style.color = "#2ecc71"; };
+    recognition.onend = () => { btn.classList.remove('grabando'); estado.innerText = "MICRÓFONO DESACTIVADO"; estado.style.color = "#e74c3c"; };
 
     recognition.onresult = (event) => {
-        const result = event.results[event.results.length - 1][0].transcript.toLowerCase();
-        if(result.includes("nombre")) document.getElementById('val-paciente').innerText = result.replace("nombre", "").trim();
-        if(result.includes("cédula")) document.getElementById('val-cedula').innerText = result.replace("cédula", "").trim();
-        if(result.includes("informe")) document.getElementById('val-informe').innerText = result.replace("informe", "").trim();
-        if(result.includes("récipe")) document.getElementById('val-recipe').innerText = result.replace("récipe", "").trim();
-        if(result.includes("indicaciones")) document.getElementById('val-indicaciones').innerText = result.replace("indicaciones", "").trim();
-        if(result.includes("exámenes")) document.getElementById('val-examenes').innerText = result.replace("exámenes", "").trim();
+        const resultado = event.results[event.results.length - 1][0].transcript.toLowerCase();
+        
+        // Mapeo inteligente de comandos
+        if(resultado.includes("nombre")) document.getElementById('val-paciente').innerText = resultado.replace("nombre", "").trim();
+        if(resultado.includes("cédula")) document.getElementById('val-cedula').innerText = resultado.replace("cédula", "").trim();
+        if(resultado.includes("informe")) document.getElementById('val-informe').innerText = resultado.replace("informe", "").trim();
+        if(resultado.includes("récipe")) document.getElementById('val-recipe').innerText = resultado.replace("récipe", "").trim();
+        if(resultado.includes("indicaciones")) document.getElementById('val-indicaciones').innerText = resultado.replace("indicaciones", "").trim();
+        if(resultado.includes("exámenes")) document.getElementById('val-examenes').innerText = resultado.replace("exámenes", "").trim();
     };
 
-    async function guardarYDescargar() {
-        const datos = {
+    // Función Principal de Guardado y PDF
+    async function ejecutarGuardadoYPdf() {
+        const datosConsulta = {
             paciente: document.getElementById('val-paciente').innerText,
             cedula: document.getElementById('val-cedula').innerText,
             informe: document.getElementById('val-informe').innerText,
@@ -91,42 +98,79 @@
         };
 
         try {
-            const res = await fetch('/guardar', {
+            // 1. Guardar en Supabase a través de tu app.py
+            const respuesta = await fetch('/guardar', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(datos)
+                body: JSON.stringify(datosConsulta)
             });
 
-            if(res.ok) {
-                alert("✅ Éxito: Guardado en Supabase.");
-                generarPDF(datos);
-                prepararWhatsApp(datos);
+            if(respuesta.ok) {
+                alert("✅ ¡Éxito! Los datos se han guardado en la Base de Datos.");
+                
+                // 2. Generar el PDF profesional
+                generarDocumentoPDF(datosConsulta);
+                
+                // 3. Activar el botón de WhatsApp
+                activarWhatsApp(datosConsulta);
             } else {
-                alert("❌ Error al guardar en el servidor.");
+                alert("❌ Hubo un problema al guardar en el servidor.");
             }
-        } catch(e) { alert("❌ Error de red: " + e); }
+        } catch(e) {
+            alert("❌ Error de conexión: " + e);
+        }
     }
 
-    function generarPDF(d) {
+    function generarDocumentoPDF(d) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(20);
-        doc.text("VOZ MÉDICA - REPORTE", 105, 20, { align: "center" });
+        
+        // Estilo del PDF
+        doc.setFontSize(22);
+        doc.setTextColor(52, 152, 219);
+        doc.text("VOZ MÉDICA PRO - REPORTE", 105, 20, { align: "center" });
+        
         doc.setFontSize(12);
-        doc.text(`Paciente: ${d.paciente} | Cédula: ${d.cedula}`, 20, 40);
-        doc.text("INFORME:", 20, 60); doc.text(d.informe, 20, 70, { maxWidth: 170 });
-        doc.text("RÉCIPE:", 20, 120); doc.text(d.recipe, 20, 130, { maxWidth: 170 });
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Paciente: ${d.paciente}`, 20, 40);
+        doc.text(`Cédula: ${d.cedula}`, 140, 40);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("INFORME MÉDICO:", 20, 60);
+        doc.setFont("helvetica", "normal");
+        doc.text(d.informe, 20, 70, { maxWidth: 170 });
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("RÉCIPE MÉDICO:", 20, 120);
+        doc.setFont("helvetica", "normal");
+        doc.text(d.recipe, 20, 130, { maxWidth: 170 });
+
+        // Segunda página para indicaciones y exámenes
         doc.addPage();
-        doc.text("INDICACIONES:", 20, 20); doc.text(d.indicaciones, 20, 30, { maxWidth: 170 });
-        if(d.examenes.length > 5) { doc.text("EXÁMENES:", 20, 100); doc.text(d.examenes, 20, 110, { maxWidth: 170 }); }
-        doc.save(`Reporte_${d.paciente}.pdf`);
+        doc.setFontSize(18);
+        doc.text("PLAN DE TRATAMIENTO", 105, 20, { align: "center" });
+        
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("INDICACIONES:", 20, 40);
+        doc.setFont("helvetica", "normal");
+        doc.text(d.indicaciones, 20, 50, { maxWidth: 170 });
+
+        if(d.examenes.length > 5) {
+            doc.setFont("helvetica", "bold");
+            doc.text("ÓRDEN DE EXÁMENES:", 20, 110);
+            doc.setFont("helvetica", "normal");
+            doc.text(d.examenes, 20, 120, { maxWidth: 170 });
+        }
+
+        doc.save(`Consulta_${d.paciente}.pdf`);
     }
 
-    function prepararWhatsApp(d) {
-        const msg = `*VOZ MÉDICA PRO*%0A*Paciente:* ${d.paciente}%0A*Informe:* ${d.informe}%0A*Récipe:* ${d.recipe}%0A*Indicaciones:* ${d.indicaciones}`;
-        const btnWA = document.getElementById('lnk-whatsapp');
-        btnWA.href = `https://wa.me/?text=${msg}`;
-        btnWA.style.display = "flex";
+    function activarWhatsApp(d) {
+        const textoWA = `*REPORTE MÉDICO - VOZ MÉDICA*%0A*Paciente:* ${d.paciente}%0A*Informe:* ${d.informe}%0A*Récipe:* ${d.recipe}%0A*Indicaciones:* ${d.indicaciones}`;
+        const link = document.getElementById('btn-whatsapp');
+        link.href = `https://wa.me/?text=${textoWA}`;
+        link.style.display = "flex";
     }
 </script>
 </body>

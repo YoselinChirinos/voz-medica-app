@@ -21,7 +21,21 @@ def login():
             return redirect(url_for('index'))
         else:
             return '<script>alert("Contraseña incorrecta"); window.location.href="/login";</script>'
-    return render_template('login.html') # Asegúrate de tener este archivo o usa el HTML anterior
+    
+    # HTML del Login integrado para evitar Error 500 por falta de archivos
+    return '''
+        <div style="text-align:center; margin-top:100px; font-family:Arial; background:#f4f7f6; height:100vh; padding-top:50px;">
+            <div style="background:white; display:inline-block; padding:40px; border-radius:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="color:#2c3e50;">Voz Médica - Acceso</h2>
+                <form method="post">
+                    <input type="password" name="password" placeholder="Contraseña" required 
+                           style="padding:12px; width:250px; border:1px solid #ddd; border-radius:5px;">
+                    <br><br>
+                    <button type="submit" style="padding:12px 30px; background:#3498db; color:white; border:none; border-radius:5px; cursor:pointer;">Entrar</button>
+                </form>
+            </div>
+        </div>
+    '''
 
 @app.route('/')
 def index():
@@ -32,10 +46,9 @@ def index():
 @app.route('/guardar', methods=['POST'])
 def guardar_datos():
     if not session.get('autenticado'):
-        return jsonify({"status": "error", "message": "No autorizado"}), 401
+        return jsonify({"status": "error"}), 401
     try:
         data = request.json
-        # Inserción robusta en la tabla 'consultas'
         supabase.table('consultas').insert({
             "paciente": data.get('paciente', 'N/A'),
             "cedula": data.get('cedula', 'N/A'),
