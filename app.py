@@ -1,98 +1,83 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
-from fpdf import FPDF
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import os
-import psycopg2
-from datetime import datetime
+from supabase import create_client, Client
 
 app = Flask(__name__)
 
-# --- CONFIGURACIÓN DE LA BASE DE DATOS (SUPABASE) ---
-# Reemplaza TU_CONTRASEÑA_REAL con la clave que definiste en Supabase
-DB_URI = "postgresql://postgres:Jsmch1610$princesa@db.gzlccjdaxdxrrbaqemgo.supabase.co:5432/postgres"
+# CONFIGURACIÓN DE SEGURIDAD
+# Esta clave cifra la sesión; puedes poner cualquier frase larga
+app.secret_key = 'clave_secreta_para_frase' 
 
-# Carpeta para guardar los PDFs temporales
-PDF_FOLDER = "static/pdfs"
-if not os.path.exists(PDF_FOLDER):
-    os.makedirs(PDF_FOLDER)
+# Esta es la contraseña que le darás al doctor
+PASSWORD_DOCTOR = "medico20262620" 
+
+# CONFIGURACIÓN DE SUPABASE
+# Asegúrate de que estas URL y KEY sean las que copiaste de tu panel de Supabase
+SUPABASE_URL = "https://gzlccjdaxdxrrbaqemgo.supabase.co"
+SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXL"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# --- RUTAS DE ACCESO Y SEGURIDAD ---
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Verificamos si la clave escrita es la correcta
+        if request.form.get('password') == PASSWORD_DOCTOR:
+            session['autenticado'] = True
+            return redirect(url_for('index'))
+        else:
+            return "Contraseña incorrecta. Intenta de nuevo."
+            
+    # Formulario sencillo de login (puedes luego ponerle CSS para que se vea pro)
+    return '''
+        <div style="text-align:center; margin-top:100px; font-family:Arial;">
+            <h2 style="color:#2c3e50;">Voz Médica - Acceso Privado</h2>
+            <p>Por favor, introduzca la clave de acceso para comenzar la prueba.</p>
+            <form method="post">
+                <input type="password" name="password" placeholder="Contraseña" style="padding:10px; width:200px;">
+                <br><br>
+                <button type="submit" style="padding:10px 20px; background-color:#3498db; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    Entrar al Sistema
+                </button>
+            </form>
+        </div>
+    '''
+
+@app.route('/logout')
+def logout():
+    session.pop('autenticado', None)
+    return redirect(url_for('login'))
+
+# --- RUTA PRINCIPAL (PROTEGIDA) ---
 
 @app.route('/')
 def index():
+    # Si NO está autenticado, lo mandamos al login
+    if not session.get('autenticado'):
+        return redirect(url_for('login'))
     return render_template('index.html')
 
-@app.route('/guardar_consulta', methods=['POST'])
-def guardar_consulta():
-    try:
-        datos = request.json
-        # Conexión a la base de datos en la nube
-        conn = psycopg2.connect(DB_URI)
-        cur = conn.cursor()
-        
-        # Insertar los datos en la tabla 'consultas'
-        # Usamos .get() para evitar errores si algún campo viene vacío
-        cur.execute(
-            """INSERT INTO consultas 
-               (nombre_paciente, cedula, informe, recipe, indicaciones, examenes) 
-               VALUES (%s, %s, %s, %s, %s, %s)""",
-            (
-                datos.get('paciente_nombre'), 
-                datos.get('cedula'), 
-                datos.get('informe'), 
-                datos.get('recipe'), 
-                datos.get('indicaciones'), 
-                datos.get('examenes')
-            )
-        )
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify({"mensaje": "✅ Consulta guardada en Supabase exitosamente"})
-    except Exception as e:
-        print(f"Error de base de datos: {e}")
-        return jsonify({"mensaje": f"❌ Error al conectar con la nube: {str(e)}"}), 500
+# --- RUTA PARA GUARDAR DATOS EN SUPABASE ---
 
-@app.route('/generar_pdf', methods=['POST'])
-def generar_pdf():
-    try:
-        datos = request.json
-        nombre_archivo = f"orden_{datos.get('cedula', 'sin_cedula')}.pdf"
-        ruta_pdf = os.path.join(PDF_FOLDER, nombre_archivo)
-        
-        pdf = FPDF()
-        
-        # Función interna para crear cada una de las 4 hojas con el mismo encabezado
-        def agregar_hoja(titulo_hoja, contenido):
-            pdf.add_page()
-            # Encabezado unificado
-            pdf.set_font("Arial", 'B', 14)
-            pdf.set_text_color(2, 119, 189) # Azul profesional
-            pdf.cell(0, 10, titulo_hoja, ln=True, align='C')
-            pdf.ln(5)
-            
-            pdf.set_font("Arial", 'B', 11)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(0, 8, f"Paciente: {datos.get('paciente_nombre')} | C.I: {datos.get('cedula')}", ln=True)
-            pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
-            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-            pdf.ln(10)
-            
-            # Contenido de la hoja
-            pdf.set_font("Arial", size=11)
-            # Aseguramos compatibilidad de caracteres para evitar signos de interrogación
-            texto_seguro = contenido.encode('latin-1', 'replace').decode('latin-1')
-            pdf.multi_cell(0, 8, texto_seguro)
+@app.route('/guardar', methods=['POST'])
+def guardar_datos():
+    if not session.get('autenticado'):
+        return jsonify({"status": "error", "message": "No autorizado"}), 401
 
-        # Generar las 4 hojas requeridas
-        agregar_hoja("Informe Clínico", datos.get('informe', ''))
-        agregar_hoja("Récipe Médico", datos.get('recipe', ''))
-        agregar_hoja("Indicaciones al Paciente", datos.get('indicaciones', ''))
-        agregar_hoja("Orden para Exámenes de Laboratorio y Otros", datos.get('examenes', ''))
-        
-        pdf.output(ruta_pdf)
-        return jsonify({"url": f"/static/pdfs/{nombre_archivo}"})
+    try:
+        data = request.json
+        dictado = data.get('texto')
+
+        if not dictado:
+            return jsonify({"status": "error", "message": "No hay texto para guardar"}), 400
+
+        # Insertamos en la tabla 'consultas' (asegúrate que se llame así en Supabase)
+        response = supabase.table('consultas').insert({"dictado": dictado}).execute()
+
+        return jsonify({"status": "success", "message": "Consulta guardada exitosamente en Supabase"}), 200
     except Exception as e:
-        print(f"Error PDF: {e}")
-        return jsonify({"mensaje": "Error al generar el PDF"}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
