@@ -1,18 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask_cors import CORS  # Importante para evitar el error de conexión
 import os
 from supabase import create_client, Client
 
 app = Flask(__name__)
 
-# CONFIGURACIÓN DE SEGURIDAD
-# Esta clave cifra la sesión; puedes poner cualquier frase larga
-app.secret_key = 'clave_secreta_para_tesis_yoselin' 
+# MEJORA: CORS permite que el navegador acepte la respuesta de Render
+CORS(app)
 
-# Esta es la contraseña que le darás al doctor
+# CONFIGURACIÓN DE SEGURIDAD
+app.secret_key = 'clave_secreta_para_tesis_yoselin' 
 PASSWORD_DOCTOR = "medico20262620" 
 
 # CONFIGURACIÓN DE SUPABASE
-# Asegúrate de que estas URL y KEY sean las que copiaste de tu panel de Supabase
 SUPABASE_URL = "https://gzlccjdaxdxrrbaqemgo.supabase.co"
 SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -22,14 +22,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Verificamos si la clave escrita es la correcta
         if request.form.get('password') == PASSWORD_DOCTOR:
             session['autenticado'] = True
             return redirect(url_for('index'))
         else:
             return "Contraseña incorrecta. Intenta de nuevo."
             
-    # Formulario sencillo de login (puedes luego ponerle CSS para que se vea pro)
     return '''
         <div style="text-align:center; margin-top:100px; font-family:Arial;">
             <h2 style="color:#2c3e50;">Voz Médica - Acceso Privado</h2>
@@ -49,35 +47,46 @@ def logout():
     session.pop('autenticado', None)
     return redirect(url_for('login'))
 
-# --- RUTA PRINCIPAL (PROTEGIDA) ---
-
 @app.route('/')
 def index():
-    # Si NO está autenticado, lo mandamos al login
     if not session.get('autenticado'):
         return redirect(url_for('login'))
     return render_template('index.html')
 
-# --- RUTA PARA GUARDAR DATOS EN SUPABASE ---
+# --- RUTA PARA GUARDAR DATOS MEJORADA ---
 
 @app.route('/guardar', methods=['POST'])
 def guardar_datos():
+    # Verificación de seguridad por sesión
     if not session.get('autenticado'):
         return jsonify({"status": "error", "message": "No autorizado"}), 401
 
     try:
         data = request.json
-        dictado = data.get('texto')
+        if not data:
+            return jsonify({"status": "error", "message": "No se recibieron datos"}), 400
 
-        if not dictado:
-            return jsonify({"status": "error", "message": "No hay texto para guardar"}), 400
+        # MEJORA: Mapeo de todos los campos que envía el nuevo index.html
+        # Esto asegura que se guarde el informe, récipe, etc., en sus columnas
+        response = supabase.table('consultas').insert({
+            "nombre": data.get('nombre'),
+            "cedula": data.get('cedula'),
+            "telefono": data.get('telefono'),
+            "informe": data.get('informe'),
+            "recipe": data.get('recipe'),
+            "indicaciones": data.get('indicaciones'),
+            "examenes": data.get('examenes'),
+            "proxima_cita": data.get('cita')
+        }).execute()
 
-        # Insertamos en la tabla 'consultas' (asegúrate que se llame así en Supabase)
-        response = supabase.table('consultas').insert({"dictado": dictado}).execute()
-
-        return jsonify({"status": "success", "message": "Consulta guardada exitosamente en Supabase"}), 200
+        return jsonify({"status": "success", "message": "Consulta guardada exitosamente"}), 200
+    
     except Exception as e:
+        # Imprime el error en la consola de Render para que puedas verlo
+        print(f"Error en Supabase: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # MEJORA: Configuración para que Render detecte el puerto automáticamente
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

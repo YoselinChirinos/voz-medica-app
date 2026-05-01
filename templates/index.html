@@ -3,83 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VozMédica Pro - Consola de Dictado</title>
-    <!-- Librería para generar PDF en el cliente -->
+    <title>VozMédica Pro - Consola Profesional</title>
+    <!-- Librerías Externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <style>
-        :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --wa: #25d366; --bg: #f0f4f8; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
-        .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --bg: #f0f4f8; --text: #333; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         
-        .guia-doctor { background: #e1f5fe; border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0; font-size: 0.95em; }
-        .guia-doctor b { color: var(--primary); }
+        /* Pantalla de Seguridad */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 1000; display: flex; align-items: center; justify-content: center; transition: 0.5s; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.3); width: 350px; }
+        
+        /* Contenedor Principal */
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { color: var(--primary); margin: 0; font-size: 2em; }
 
-        .mic-section { text-align: center; padding: 20px 0; border: 2px dashed #e0e0e0; border-radius: 15px; margin-bottom: 20px; }
-        .btn-mic { background: var(--danger); color: white; border: none; border-radius: 50%; width: 85px; height: 85px; font-size: 35px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .btn-mic.recording { background: var(--secondary); transform: scale(1.05); animation: pulse 1.5s infinite; }
+        .guia-doctor { background: #e3f2fd; border-left: 6px solid var(--primary); padding: 15px; margin-bottom: 25px; border-radius: 4px; font-size: 0.9em; }
         
-        .step-2 { display: none; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .mic-section { text-align: center; padding: 30px; border: 2px dashed #cfd8dc; border-radius: 20px; background: #fafafa; margin-bottom: 25px; }
+        .btn-mic { background: var(--danger); color: white; border: none; border-radius: 50%; width: 80px; height: 80px; font-size: 35px; cursor: pointer; transition: 0.3s; }
+        .btn-mic.recording { background: var(--secondary); transform: scale(1.1); animation: pulse 1.5s infinite; }
+        
+        /* Formulario */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .full { grid-column: span 2; }
-        
-        label { font-weight: bold; color: var(--primary); display: block; margin-top: 8px; margin-bottom: 4px; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #fafafa; }
-        textarea { height: 120px; line-height: 1.6; resize: vertical; }
+        label { font-weight: 600; color: var(--primary); display: block; margin-bottom: 5px; font-size: 0.85em; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 10px; font-size: 15px; box-sizing: border-box; }
+        textarea { height: 100px; resize: vertical; }
 
-        .btn-group { display: flex; gap: 10px; margin-top: 25px; justify-content: center; flex-wrap: wrap; }
-        .btn { padding: 12px 20px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
-        .btn:active { transform: translateY(2px); }
+        .btn-group { display: flex; gap: 15px; margin-top: 30px; justify-content: center; }
+        .btn { padding: 14px 25px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 15px; }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn:disabled { background: #ccc !important; }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.6); } 70% { box-shadow: 0 0 0 15px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
-        
-        #interino { color: #0277bd; font-weight: 500; min-height: 20px; margin-top: 10px; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
+        #interino { font-style: italic; color: var(--primary); margin-top: 15px; min-height: 24px; }
     </style>
 </head>
 <body>
 
+<!-- Pantalla de Login (Seguridad) -->
+<div id="login-screen">
+    <div class="login-card">
+        <h2 style="color: var(--primary);">VozMédica Pro</h2>
+        <p>Introduzca su clave de acceso profesional</p>
+        <input type="password" id="medico-key" placeholder="Clave Médica" style="margin-bottom:20px; text-align:center;">
+        <button class="btn" style="background: var(--primary); width: 100%;" onclick="verificarAcceso()">CONFIGURAR ACCESO</button>
+    </div>
+</div>
+
 <div class="container">
     <div id="step-1">
-        <h1 style="color: var(--primary); text-align: center; margin-top: 0;">🩺 VozMédica Pro</h1>
+        <div class="header">
+            <h1>🩺 Consola de Dictado</h1>
+            <p>Innovación para el Especialista Moderno</p>
+        </div>
         
         <div class="guia-doctor">
-            <strong>🎤 Comandos de voz permitidos:</strong><br>
-            • <b>Nombre</b> [Paciente] • <b>Cédula</b> [Número] • <b>WhatsApp</b> [Código + Número]<br>
-            • <b>Informe</b> [Diagnóstico] • <b>Récipe</b> [Medicamentos] • <b>Indicaciones</b> [Dosis]<br>
-            • <b>Exámenes</b> [Examen 1] <b>y</b> [Examen 2]... • <b>Cita</b> [Fecha de regreso]
+            Use comandos como: <b>Nombre</b>, <b>Cédula</b>, <b>WhatsApp</b>, <b>Informe</b>, <b>Récipe</b>, <b>Cita</b>.
         </div>
 
         <div class="mic-section">
             <button id="btn-mic" class="btn-mic" onclick="toggleMic()">🎤</button>
-            <h3 id="status" style="margin: 10px 0;">Micrófono Apagado</h3>
+            <h3 id="status">Micrófono Listo</h3>
             <p id="interino"></p>
-            <small style="color: #666;">Hable después de activar el micrófono. Use "<b>y</b>" para separar exámenes.</small>
         </div>
 
         <div style="text-align: center;">
-            <button class="btn" style="background: var(--primary); width: 250px; font-size: 16px;" onclick="cambiarPantalla(2)">👁️ REVISAR Y GENERAR</button>
+            <button class="btn" style="background: var(--primary);" onclick="cambiarPantalla(2)">📝 REVISAR Y FINALIZAR</button>
         </div>
     </div>
 
-    <div id="step-2" class="step-2">
-        <h2 style="color: var(--primary); border-bottom: 2px solid #e1f5fe; padding-bottom: 10px;">📋 Revisión de Consulta</h2>
+    <div id="step-2" style="display:none;">
+        <h2 style="color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px;">📋 Validación de Consulta</h2>
         
         <div class="grid">
-            <div><label>Nombre del Paciente:</label><input type="text" id="pac_nom" placeholder="No dictado"></div>
-            <div><label>Cédula de Identidad:</label><input type="text" id="pac_ced" placeholder="No dictado"></div>
-            <div><label>WhatsApp (con +):</label><input type="text" id="pac_tel" placeholder="Ej: +584120000000"></div>
-            <div><label>Fecha Próxima Cita:</label><input type="text" id="regresar" placeholder="No dictado"></div>
-            
-            <div class="full"><label>Informe Clínico:</label><textarea id="informe" placeholder="Dictar informe médico..."></textarea></div>
-            <div class="full"><label>Récipe / Prescripción:</label><textarea id="recipe" placeholder="Dictar medicamentos..."></textarea></div>
-            <div class="full"><label>Indicaciones al Paciente:</label><textarea id="indicaciones" placeholder="Dictar dosis y frecuencia..."></textarea></div>
-            <div class="full"><label>Exámenes y Otros (Orden):</label><textarea id="examenes" placeholder="Dictar lista de exámenes..."></textarea></div>
+            <div><label>Nombre Paciente:</label><input type="text" id="pac_nom"></div>
+            <div><label>Cédula:</label><input type="text" id="pac_ced"></div>
+            <div><label>WhatsApp (con +):</label><input type="text" id="pac_tel"></div>
+            <div><label>Próxima Cita:</label><input type="text" id="regresar"></div>
+            <div class="full"><label>Informe Clínico:</label><textarea id="informe"></textarea></div>
+            <div class="full"><label>Récipe / Tratamiento:</label><textarea id="recipe"></textarea></div>
+            <div class="full"><label>Indicaciones:</label><textarea id="indicaciones"></textarea></div>
+            <div class="full"><label>Exámenes:</label><textarea id="examenes"></textarea></div>
         </div>
 
         <div class="btn-group">
-            <button class="btn" style="background:#546e7a" onclick="cambiarPantalla(1)">🎤 CONTINUAR DICTANDO</button>
-            <button class="btn" style="background:#e53935" onclick="dictarDeNuevo()">🔄 LIMPIAR TODO</button>
-            <!-- BOTÓN UNIFICADO: Guarda, genera PDF y abre WhatsApp -->
-            <button id="btn-final" class="btn" style="background:var(--secondary); font-size: 15px;" onclick="flujoFinal()">💾 GUARDAR, PDF Y WHATSAPP</button>
+            <button class="btn" style="background:#607d8b" onclick="cambiarPantalla(1)">🎤 SEGUIR DICTANDO</button>
+            <button id="btn-final" class="btn" style="background:var(--secondary)" onclick="flujoFinalSeguro()">🚀 GUARDAR, PDF Y WHATSAPP</button>
         </div>
     </div>
 </div>
@@ -87,7 +101,21 @@
 <script>
     let recog;
     let activo = false;
+    let tokenSeguridad = "";
 
+    // 1. Manejo de Seguridad Inicial
+    function verificarAcceso() {
+        const key = document.getElementById('medico-key').value;
+        if(key.length >= 4) {
+            tokenSeguridad = key;
+            document.getElementById('login-screen').style.opacity = '0';
+            setTimeout(() => { document.getElementById('login-screen').style.display = 'none'; }, 500);
+        } else {
+            alert("Ingrese una clave válida.");
+        }
+    }
+
+    // 2. Configuración de Voz
     if ('webkitSpeechRecognition' in window) {
         recog = new webkitSpeechRecognition();
         recog.continuous = true;
@@ -96,58 +124,38 @@
 
         recog.onresult = (e) => {
             const texto = e.results[e.results.length - 1][0].transcript.toLowerCase();
-            document.getElementById('interino').innerText = "Escuchado: " + texto;
-            procesarInteligente(texto);
+            document.getElementById('interino').innerText = "Voz detectada: " + texto;
+            procesarTexto(texto);
         };
     }
 
-    function procesarInteligente(texto) {
-        const comandos = {
-            "nombre": "pac_nom", "cédula": "pac_ced", "cedula": "pac_ced",
-            "whatsapp": "pac_tel", "teléfono": "pac_tel", "telefono": "pac_tel",
-            "informe": "informe", "récipe": "recipe", "recipe": "recipe", 
-            "prescripción": "recipe", "tratamiento": "recipe",
-            "indicaciones": "indicaciones", "exámenes": "examenes", 
-            "examenes": "examenes", "laboratorio": "examenes", "regresar": "regresar", "cita": "regresar"
+    function procesarTexto(t) {
+        const mapeo = {
+            "nombre": "pac_nom", "cedula": "pac_ced", "cédula": "pac_ced",
+            "whatsapp": "pac_tel", "teléfono": "pac_tel", "informe": "informe",
+            "recipe": "recipe", "récipe": "recipe", "indicaciones": "indicaciones",
+            "examenes": "examenes", "exámenes": "examenes", "cita": "regresar"
         };
+        const regex = /(nombre|cedula|cédula|whatsapp|teléfono|informe|recipe|récipe|indicaciones|examenes|exámenes|cita)/g;
+        const partes = t.split(regex);
 
-        const regex = /(nombre|cédula|cedula|whatsapp|teléfono|telefono|informe|récipe|recipe|prescripción|tratamiento|indicaciones|exámenes|examenes|laboratorio|regresar|cita)/g;
-        const bloques = texto.split(regex);
-
-        for (let i = 1; i < bloques.length; i += 2) {
-            const cmd = bloques[i].trim();
-            let val = bloques[i+1] ? bloques[i+1].trim() : "";
-            const id = comandos[cmd];
-
+        for (let i = 1; i < partes.length; i += 2) {
+            const cmd = partes[i].trim();
+            const val = partes[i+1] ? partes[i+1].trim() : "";
+            const id = mapeo[cmd];
             if (id && val) {
-                val = val.charAt(0).toUpperCase() + val.slice(1);
-                const campo = document.getElementById(id);
-
-                if (id === "pac_tel") {
-                    let tel = val.replace(/\s/g, '').replace(/[^\d]/g, '');
-                    if (!tel.startsWith('+') && tel.length >= 10) tel = '+' + tel;
-                    campo.value = tel;
-                } else if (id === "examenes") {
-                    const lista = val.split(/ y |, |\./);
-                    lista.forEach(item => {
-                        let ex = item.trim();
-                        if (ex.length > 2) campo.value += "- " + ex.charAt(0).toUpperCase() + ex.slice(1) + "\n";
-                    });
-                } else if (["pac_nom", "pac_ced", "regresar"].includes(id)) {
-                    campo.value = val;
-                } else {
-                    campo.value += (campo.value ? " " : "") + val.replace(/ y /g, ", ") + ". \n";
-                }
+                const input = document.getElementById(id);
+                const valorFormateado = val.charAt(0).toUpperCase() + val.slice(1);
+                if(id === "pac_tel") input.value = valorFormateado.replace(/\s/g, '');
+                else if(["pac_nom", "pac_ced", "regresar"].includes(id)) input.value = valorFormateado;
+                else input.value += (input.value ? " " : "") + valorFormateado + ". ";
             }
         }
     }
 
-    // FLUJO FINAL: Guarda en DB, Genera PDF y activa WhatsApp
-    async function flujoFinal() {
+    // 3. Flujo de Salida (Backend + PDF + WA)
+    async function flujoFinalSeguro() {
         const btn = document.getElementById('btn-final');
-        btn.disabled = true;
-        btn.innerText = "PROCESANDO...";
-
         const datos = {
             paciente: document.getElementById('pac_nom').value,
             cedula: document.getElementById('pac_ced').value,
@@ -156,108 +164,95 @@
             recipe: document.getElementById('recipe').value,
             indicaciones: document.getElementById('indicaciones').value,
             examenes: document.getElementById('examenes').value,
-            proxima_cita: document.getElementById('regresar').value
+            cita: document.getElementById('regresar').value
         };
 
-        if (!datos.paciente || !datos.cedula) {
-            alert("Por favor, asegúrese de tener al menos el nombre y la cédula.");
-            btn.disabled = false;
-            btn.innerText = "💾 GUARDAR, PDF Y WHATSAPP";
-            return;
-        }
+        if(!datos.paciente) return alert("El nombre del paciente es requerido.");
+
+        btn.disabled = true;
+        btn.innerText = "⌛ ENVIANDO...";
 
         try {
-            // 1. GUARDAR EN BASE DE DATOS
-            const resp = await fetch('/guardar_consulta', {
+            // PETICIÓN AL BACKEND CON SEGURIDAD
+            const respuesta = await fetch('/guardar_consulta', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': tokenSeguridad // Clave que ingresó el médico
+                },
                 body: JSON.stringify(datos)
             });
-            const resDB = await resp.json();
 
-            if (resp.ok) {
-                // 2. GENERAR PDF (4 hojas simuladas en una estructura lógica)
-                generarPDFPro(datos);
+            if (respuesta.status === 401) {
+                alert("❌ Clave médica incorrecta. No se pudo guardar.");
+                location.reload();
+                return;
+            }
 
-                // 3. ENVIAR WHATSAPP
-                enviarWA(datos);
-
-                alert("Proceso completado: Guardado en DB y PDF generado.");
-                limpiarCampos();
+            if (respuesta.ok) {
+                generarPDF(datos);
+                enviarWhatsApp(datos);
+                alert("✅ Proceso Exitoso: Guardado y documentos generados.");
+                limpiar();
                 cambiarPantalla(1);
             } else {
-                alert("Error al guardar: " + resDB.mensaje);
+                throw new Error();
             }
         } catch (e) {
-            alert("Error en el sistema. Verifique la conexión.");
+            alert("⚠️ Error de conexión con Render. El servidor podría estar despertando. Intente en 30 segundos.");
         } finally {
             btn.disabled = false;
-            btn.innerText = "💾 GUARDAR, PDF Y WHATSAPP";
+            btn.innerText = "🚀 GUARDAR, PDF Y WHATSAPP";
         }
     }
 
-    function generarPDFPro(d) {
+    function generarPDF(d) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const margin = 20;
-
         const paginas = [
-            { titulo: "INFORME MÉDICO", contenido: d.informe },
-            { titulo: "RÉCIPE / PRESCRIPCIÓN", contenido: d.recipe },
-            { titulo: "INDICACIONES", contenido: d.indicaciones },
-            { titulo: "ORDEN DE EXÁMENES", contenido: d.examenes }
+            {t: "INFORME MÉDICO", c: d.informe},
+            {t: "RÉCIPE / TRATAMIENTO", c: d.recipe},
+            {t: "INDICACIONES", c: d.indicaciones},
+            {t: "ÓRDENES DE EXÁMENES", c: d.examenes}
         ];
 
-        paginas.forEach((pag, index) => {
-            if (index > 0) doc.addPage();
-            
-            // Encabezado
-            doc.setFontSize(16);
-            doc.setTextColor(2, 119, 189);
-            doc.text("VOZMÉDICA PRO", 105, 15, { align: "center" });
-            
-            doc.setFontSize(14);
-            doc.setTextColor(0);
-            doc.text(pag.titulo, 105, 25, { align: "center" });
-            doc.line(20, 28, 190, 28);
-
-            // Datos Paciente
-            doc.setFontSize(10);
-            doc.text(`Paciente: ${d.paciente}`, margin, 40);
-            doc.text(`Cédula: ${d.cedula}`, margin, 45);
-            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 150, 40);
-            if(d.proxima_cita) doc.text(`Próxima Cita: ${d.proxima_cita}`, margin, 50);
-
-            // Contenido
+        paginas.forEach((p, i) => {
+            if(i > 0) doc.addPage();
+            doc.setFillColor(2, 119, 189);
+            doc.rect(0, 0, 210, 35, 'F');
+            doc.setTextColor(255);
+            doc.setFontSize(20);
+            doc.text("VOZMÉDICA PRO", 105, 18, {align:"center"});
             doc.setFontSize(12);
-            const splitText = doc.splitTextToSize(pag.contenido || "No se registraron datos.", 170);
-            doc.text(splitText, margin, 65);
-        });
+            doc.text(p.t, 105, 28, {align:"center"});
 
+            doc.setTextColor(0);
+            doc.text(`Paciente: ${d.paciente}`, 20, 50);
+            doc.text(`Cédula: ${d.cedula}`, 20, 58);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 150, 50);
+            
+            doc.line(20, 65, 190, 65);
+            doc.setFontSize(13);
+            const lineas = doc.splitTextToSize(p.c || "No se registraron datos en esta sección.", 170);
+            doc.text(lineas, 20, 80);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text("Generado por VozMédica Pro - Sistema de Dictado Inteligente", 105, 285, {align:"center"});
+        });
         doc.save(`Consulta_${d.paciente}.pdf`);
     }
 
-    function enviarWA(d) {
+    function enviarWhatsApp(d) {
         if(!d.telefono) return;
-        const tel = d.telefono.replace(/[^\d+]/g, '');
-        const msg = `*VOZMÉDICA PRO*\n\nHola ${d.paciente}, adjunto sus indicaciones:\n${d.indicaciones}\n\n_Próxima cita: ${d.proxima_cita || 'Por definir'}_`;
-        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`, '_blank');
+        const msg = `*VOZMÉDICA PRO*\n\nHola *${d.paciente}*, adjuntamos sus indicaciones:\n\n${d.indicaciones}\n\n*Próxima Cita:* ${d.cita || 'Por definir'}`;
+        window.open(`https://api.whatsapp.com/send?phone=${d.telefono.replace(/[^\d]/g, '')}&text=${encodeURIComponent(msg)}`, '_blank');
     }
 
     function toggleMic() {
         const btn = document.getElementById('btn-mic');
-        const st = document.getElementById('status');
-        if (!activo) { 
-            recog.start(); 
-            btn.classList.add('recording'); 
-            st.innerText = "Escuchando...";
-            activo = true; 
-        } else { 
-            recog.stop(); 
-            btn.classList.remove('recording'); 
-            st.innerText = "Micrófono Apagado";
-            activo = false; 
-        }
+        if (!activo) { recog.start(); btn.classList.add('recording'); activo = true; }
+        else { recog.stop(); btn.classList.remove('recording'); activo = false; }
     }
 
     function cambiarPantalla(s) {
@@ -265,14 +260,8 @@
         document.getElementById('step-2').style.display = s === 2 ? 'block' : 'none';
     }
 
-    function limpiarCampos() {
-        const ids = ["pac_nom", "pac_ced", "pac_tel", "regresar", "informe", "recipe", "indicaciones", "examenes"];
-        ids.forEach(id => document.getElementById(id).value = "");
-        document.getElementById('interino').innerText = "";
-    }
-
-    function dictarDeNuevo() {
-        if(confirm("¿Borrar todo?")) { limpiarCampos(); cambiarPantalla(1); }
+    function limpiar() {
+        ["pac_nom", "pac_ced", "pac_tel", "regresar", "informe", "recipe", "indicaciones", "examenes"].forEach(id => document.getElementById(id).value = "");
     }
 </script>
 </body>
