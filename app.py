@@ -3,7 +3,6 @@ import os
 from supabase import create_client, Client
 
 app = Flask(__name__)
-# Esta clave es necesaria para que las sesiones funcionen
 app.secret_key = os.urandom(24)
 
 # CONFIGURACIÓN DE SEGURIDAD
@@ -21,9 +20,7 @@ def login():
             session['autenticado'] = True
             return redirect(url_for('index'))
         else:
-            return '''
-                <script>alert("Contraseña incorrecta"); window.location.href="/login";</script>
-            '''
+            return '<script>alert("Contraseña incorrecta"); window.location.href="/login";</script>'
             
     return '''
         <div style="text-align:center; margin-top:100px; font-family:Arial, sans-serif; background-color:#f4f7f6; height:100vh; padding-top:50px;">
@@ -52,15 +49,18 @@ def index():
 @app.route('/guardar', methods=['POST'])
 def guardar_datos():
     if not session.get('autenticado'):
-        return jsonify({"status": "error", "message": "No autorizado"}), 401
+        return jsonify({"status": "error"}), 401
     try:
         data = request.json
-        dictado = data.get('texto')
-        if not dictado:
-            return jsonify({"status": "error", "message": "No hay texto"}), 400
-        
-        # Guardar en la tabla 'consultas' de Supabase
-        supabase.table('consultas').insert({"dictado": dictado}).execute()
+        # Guardado completo en la tabla 'consultas'
+        supabase.table('consultas').insert({
+            "paciente": data.get('paciente'),
+            "cedula": data.get('cedula'),
+            "informe": data.get('informe'),
+            "recipe": data.get('recipe'),
+            "indicaciones": data.get('indicaciones'),
+            "examenes": data.get('examenes')
+        }).execute()
         return jsonify({"status": "success"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
