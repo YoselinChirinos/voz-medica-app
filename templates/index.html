@@ -2,121 +2,171 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Voz Médica Pro - Panel de Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voz Médica Pro - Dictado</title>
+    <!-- Librerías Necesarias -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f8f9fa; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .mic-area { text-align: center; margin-bottom: 25px; }
-        .btn-mic { background: #e74c3c; color: white; border: none; width: 70px; height: 70px; border-radius: 50%; font-size: 24px; cursor: pointer; transition: 0.3s; }
-        .btn-mic.active { background: #2ecc71; box-shadow: 0 0 15px #2ecc71; }
-        .status { color: #e74c3c; font-weight: bold; margin-top: 10px; font-size: 16px; }
-
-        /* Estilos de tarjetas según image_2e8e11.png */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .card { background: white; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; }
-        .card label { font-weight: bold; color: #34495e; display: block; margin-bottom: 8px; font-size: 13px; }
-        .content { min-height: 40px; color: #555; font-size: 15px; }
-        .full { grid-column: span 2; }
-
-        .btn-action { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; }
-        .btn-main { padding: 16px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; text-align: center; font-size: 16px; text-decoration: none; display: block; }
-        .btn-blue { background: #3498db; color: white; width: 100%; }
-        .btn-green { background: #25d366; color: white; display: none; } /* Oculto hasta guardar */
+        :root { --primary: #3498db; --dark: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { color: var(--dark); text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .instrucciones { background: #e1f5fe; padding: 15px; border-left: 5px solid var(--primary); border-radius: 5px; margin-bottom: 20px; font-size: 0.9em; }
+        .seccion-dictado { border: 2px dashed #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; text-align: center; transition: 0.3s; }
+        .activo { border-color: #e74c3c; background: #fff5f5; }
+        .btn-mic { background: #e74c3c; color: white; border: none; width: 80px; height: 80px; border-radius: 50%; font-size: 30px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
+        .btn-mic:hover { transform: scale(1.1); }
+        .campos-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .campo { background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .campo label { font-weight: bold; color: var(--primary); display: block; margin-bottom: 5px; text-transform: uppercase; font-size: 0.8em; }
+        .resultado { min-height: 40px; color: #333; font-size: 1.1em; }
+        .btn-finalizar { background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
+        .btn-finalizar:hover { background: #2980b9; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="mic-area">
-        <button id="start-mic" class="btn-mic"><i class="fas fa-microphone"></i></button>
-        <div id="status-label" class="status">MICRÓFONO DESACTIVADO</div>
+    <h1><i class="fas fa-stethoscope"></i> Voz Médica Pro</h1>
+
+    <div class="instrucciones">
+        <strong><i class="fas fa-keyboard"></i> Comandos de voz:</strong><br>
+        • Nombre [Paciente] • Cédula [Número] • Informe [Diagnóstico]<br>
+        • Récipe [Medicamentos] • Indicaciones [Dosis] • Exámenes [Lista]
     </div>
 
-    <div class="grid">
-        <div class="card"><label>PACIENTE:</label><div id="p-paciente" class="content">---</div></div>
-        <div class="card"><label>CÉDULA:</label><div id="p-cedula" class="content">---</div></div>
-        <div class="card full"><label>INFORME MÉDICO:</label><div id="p-informe" class="content">---</div></div>
-        <div class="card full"><label>RÉCIPE:</label><div id="p-recipe" class="content">---</div></div>
-        <div class="card full"><label>INDICACIONES:</label><div id="p-indicaciones" class="content">---</div></div>
-        <div class="card full"><label>ORDEN DE EXÁMENES:</label><div id="p-examenes" class="content">---</div></div>
+    <div class="seccion-dictado" id="zona-dictado">
+        <button class="btn-mic" id="btn-escuchar"><i class="fas fa-microphone"></i></button>
+        <p id="estado-texto" style="margin-top:15px; font-weight:bold;">Micrófono Apagado</p>
     </div>
 
-    <div class="btn-action">
-        <button onclick="finalizarConsulta()" class="btn-main btn-blue">
-            <i class="fas fa-save"></i> GUARDAR Y GENERAR PDF
-        </button>
-        <a id="wa-btn" href="#" class="btn-main btn-green" target="_blank">
-            <i class="fab fa-whatsapp"></i> ENVIAR PDF / TEXTO POR WHATSAPP
-        </a>
+    <div class="campos-datos">
+        <div class="campo"><label>Paciente</label><div id="nombre-paciente" class="resultado">---</div></div>
+        <div class="campo"><label>Cédula</label><div id="cedula-paciente" class="resultado">---</div></div>
+        <div class="campo" style="grid-column: span 2;"><label>Informe Médico</label><div id="campo-informe" class="resultado">---</div></div>
+        <div class="campo" style="grid-column: span 2;"><label>Récipe</label><div id="campo-recipe" class="resultado">---</div></div>
+        <div class="campo" style="grid-column: span 2;"><label>Indicaciones</label><div id="campo-indicaciones" class="resultado">---</div></div>
+        <div class="campo" style="grid-column: span 2;"><label>Orden de Exámenes</label><div id="campo-examenes" class="resultado">---</div></div>
     </div>
+
+    <button class="btn-finalizar" onclick="enviarYGenerarPDF()">
+        <i class="fas fa-file-pdf"></i> REVISAR Y GENERAR REPORTE
+    </button>
 </div>
 
 <script>
-    const btn = document.getElementById('start-mic');
-    const label = document.getElementById('status-label');
+    // Lógica de Reconocimiento de Voz
+    const btnEscuchar = document.getElementById('btn-escuchar');
+    const estadoTexto = document.getElementById('estado-texto');
+    const zonaDictado = document.getElementById('zona-dictado');
+
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'es-ES';
     recognition.continuous = true;
+    recognition.interimResults = false;
 
-    btn.onclick = () => {
-        if(btn.classList.contains('active')) { recognition.stop(); } 
-        else { recognition.start(); }
+    btnEscuchar.onclick = () => {
+        if (btnEscuchar.classList.contains('grabando')) {
+            recognition.stop();
+        } else {
+            recognition.start();
+        }
     };
 
-    recognition.onstart = () => { btn.classList.add('active'); label.innerText = "ESCUCHANDO..."; label.style.color = "#2ecc71"; };
-    recognition.onend = () => { btn.classList.remove('active'); label.innerText = "MICRÓFONO DESACTIVADO"; label.style.color = "#e74c3c"; };
+    recognition.onstart = () => {
+        btnEscuchar.classList.add('grabando');
+        estadoTexto.innerText = "Escuchando... hable ahora";
+        zonaDictado.classList.add('activo');
+    };
+
+    recognition.onend = () => {
+        btnEscuchar.classList.remove('grabando');
+        estadoTexto.innerText = "Micrófono Apagado";
+        zonaDictado.classList.remove('activo');
+    };
 
     recognition.onresult = (event) => {
-        const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
-        if(text.includes("paciente")) document.getElementById('p-paciente').innerText = text.split("paciente")[1].trim();
-        if(text.includes("cédula")) document.getElementById('p-cedula').innerText = text.split("cédula")[1].trim();
-        if(text.includes("informe")) document.getElementById('p-informe').innerText = text.split("informe")[1].trim();
-        if(text.includes("récipe")) document.getElementById('p-recipe').innerText = text.split("récipe")[1].trim();
-        if(text.includes("indicaciones")) document.getElementById('p-indicaciones').innerText = text.split("indicaciones")[1].trim();
-        if(text.includes("exámenes")) document.getElementById('p-examenes').innerText = text.split("exámenes")[1].trim();
+        const texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
+        console.log("Dictado:", texto);
+
+        if (texto.includes("nombre")) document.getElementById('nombre-paciente').innerText = texto.replace("nombre", "").trim();
+        if (texto.includes("cédula")) document.getElementById('cedula-paciente').innerText = texto.replace("cédula", "").trim();
+        if (texto.includes("informe")) document.getElementById('campo-informe').innerText = texto.replace("informe", "").trim();
+        if (texto.includes("récipe")) document.getElementById('campo-recipe').innerText = texto.replace("récipe", "").trim();
+        if (texto.includes("indicaciones")) document.getElementById('campo-indicaciones').innerText = texto.replace("indicaciones", "").trim();
+        if (texto.includes("exámenes")) document.getElementById('campo-examenes').innerText = texto.replace("exámenes", "").trim();
     };
 
-    async function finalizarConsulta() {
-        const d = {
-            paciente: document.getElementById('p-paciente').innerText,
-            cedula: document.getElementById('p-cedula').innerText,
-            informe: document.getElementById('p-informe').innerText,
-            recipe: document.getElementById('p-recipe').innerText,
-            indicaciones: document.getElementById('p-indicaciones').innerText,
-            examenes: document.getElementById('p-examenes').innerText
+    // Lógica Final: Guardar en Supabase y Generar PDF
+    function enviarYGenerarPDF() {
+        const datos = {
+            paciente: document.getElementById('nombre-paciente').innerText,
+            cedula: document.getElementById('cedula-paciente').innerText,
+            informe: document.getElementById('campo-informe').innerText,
+            recipe: document.getElementById('campo-recipe').innerText,
+            indicaciones: document.getElementById('campo-indicaciones').innerText,
+            examenes: document.getElementById('campo-examenes').innerText
         };
 
-        const res = await fetch('/guardar', {
+        fetch('/guardar', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(d)
-        });
+            body: JSON.stringify(datos)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === "success") {
+                alert("✅ ¡Éxito! Consulta guardada en la base de datos.");
 
-        if(res.ok) {
-            alert("Consulta guardada en Supabase.");
-            crearPDF(d);
-            const wa = document.getElementById('wa-btn');
-            wa.href = `https://wa.me/?text=*REPORTE MÉDICO*%0A*Paciente:* ${d.paciente}%0A*Informe:* ${d.informe}`;
-            wa.style.display = "block";
-        } else {
-            alert("Error de sesión o servidor.");
-        }
-    }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Página 1: Encabezado e Informe
+                doc.setFontSize(20);
+                doc.setTextColor(52, 152, 219);
+                doc.text("VOZ MÉDICA PRO - REPORTE", 105, 20, { align: "center" });
+                
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`Paciente: ${datos.paciente}`, 20, 40);
+                doc.text(`Cédula: ${datos.cedula}`, 140, 40);
+                
+                doc.setFont("helvetica", "bold");
+                doc.text("INFORME MÉDICO:", 20, 60);
+                doc.setFont("helvetica", "normal");
+                doc.text(datos.informe, 20, 70, { maxWidth: 170 });
+                
+                doc.setFont("helvetica", "bold");
+                doc.text("RÉCIPE:", 20, 130);
+                doc.setFont("helvetica", "normal");
+                doc.text(datos.recipe, 20, 140, { maxWidth: 170 });
 
-    function crearPDF(d) {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.setFontSize(20);
-        doc.text("REPORTE MÉDICO", 105, 20, {align:"center"});
-        doc.setFontSize(12);
-        doc.text(`Paciente: ${d.paciente}`, 20, 40);
-        doc.text(`Cédula: ${d.cedula}`, 20, 50);
-        doc.text(`Informe: ${d.informe}`, 20, 70, {maxWidth: 170});
-        doc.text(`Récipe: ${d.recipe}`, 20, 110);
-        doc.save(`${d.paciente}_Consulta.pdf`);
+                // Página 2: Plan y Exámenes
+                doc.addPage();
+                doc.setFontSize(18);
+                doc.text("PLAN Y TRATAMIENTO", 105, 20, { align: "center" });
+                
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("INDICACIONES:", 20, 40);
+                doc.setFont("helvetica", "normal");
+                doc.text(datos.indicaciones, 20, 50, { maxWidth: 170 });
+
+                if (datos.examenes.length > 5) {
+                    doc.setFont("helvetica", "bold");
+                    doc.text("ÓRDEN DE EXÁMENES:", 20, 120);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(datos.examenes, 20, 130, { maxWidth: 170 });
+                }
+
+                doc.save(`Consulta_${datos.paciente}.pdf`);
+            }
+        })
+        .catch(err => alert("❌ Error: " + err));
     }
 </script>
+
 </body>
 </html>
