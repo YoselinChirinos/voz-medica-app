@@ -1,5 +1,4 @@
 flask
-psycopg2-binary
-fpdf
-gunicorn
+flask-cors
 supabase
+gunicorn
