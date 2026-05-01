@@ -21,24 +21,7 @@ def login():
             return redirect(url_for('index'))
         else:
             return '<script>alert("Contraseña incorrecta"); window.location.href="/login";</script>'
-            
-    return '''
-        <div style="text-align:center; margin-top:100px; font-family:Arial, sans-serif; background-color:#f4f7f6; height:100vh; padding-top:50px;">
-            <div style="background:white; display:inline-block; padding:40px; border-radius:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                <h2 style="color:#2c3e50;">Voz Médica - Acceso Privado</h2>
-                <p style="color:#7f8c8d;">Introduzca la clave para comenzar la consulta</p>
-                <form method="post">
-                    <input type="password" name="password" placeholder="Contraseña" required 
-                           style="padding:12px; width:250px; border:1px solid #bdc3c7; border-radius:5px; font-size:16px;">
-                    <br><br>
-                    <button type="submit" 
-                            style="padding:12px 30px; background-color:#3498db; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px; font-weight:bold;">
-                        Entrar al Sistema
-                    </button>
-                </form>
-            </div>
-        </div>
-    '''
+    return render_template('login.html') # Asegúrate de tener este archivo o usa el HTML anterior
 
 @app.route('/')
 def index():
@@ -49,17 +32,17 @@ def index():
 @app.route('/guardar', methods=['POST'])
 def guardar_datos():
     if not session.get('autenticado'):
-        return jsonify({"status": "error"}), 401
+        return jsonify({"status": "error", "message": "No autorizado"}), 401
     try:
         data = request.json
-        # Guardado completo en la tabla 'consultas'
+        # Inserción robusta en la tabla 'consultas'
         supabase.table('consultas').insert({
-            "paciente": data.get('paciente'),
-            "cedula": data.get('cedula'),
-            "informe": data.get('informe'),
-            "recipe": data.get('recipe'),
-            "indicaciones": data.get('indicaciones'),
-            "examenes": data.get('examenes')
+            "paciente": data.get('paciente', 'N/A'),
+            "cedula": data.get('cedula', 'N/A'),
+            "informe": data.get('informe', ''),
+            "recipe": data.get('recipe', ''),
+            "indicaciones": data.get('indicaciones', ''),
+            "examenes": data.get('examenes', '')
         }).execute()
         return jsonify({"status": "success"}), 200
     except Exception as e:
