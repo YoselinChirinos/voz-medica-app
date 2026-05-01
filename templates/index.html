@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VozMédica Pro - Consola de Dictado</title>
+    <style>
+        :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --wa: #25d366; --bg: #f0f4f8; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        
+        .guia-doctor { background: #e1f5fe; border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0; font-size: 0.95em; }
+        .guia-doctor b { color: var(--primary); }
+
+        .mic-section { text-align: center; padding: 20px 0; border: 2px dashed #e0e0e0; border-radius: 15px; margin-bottom: 20px; }
+        .btn-mic { background: var(--danger); color: white; border: none; border-radius: 50%; width: 85px; height: 85px; font-size: 35px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .btn-mic.recording { background: var(--secondary); transform: scale(1.05); animation: pulse 1.5s infinite; }
+        
+        .step-2 { display: none; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full { grid-column: span 2; }
+        
+        label { font-weight: bold; color: var(--primary); display: block; margin-top: 8px; margin-bottom: 4px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #fafafa; }
+        textarea { height: 120px; line-height: 1.6; resize: vertical; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 25px; justify-content: center; flex-wrap: wrap; }
+        .btn { padding: 12px 20px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .btn:active { transform: translateY(2px); }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.6); } 70% { box-shadow: 0 0 0 15px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
+        
+        #interino { color: #0277bd; font-weight: 500; min-height: 20px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="step-1">
+        <h1 style="color: var(--primary); text-align: center; margin-top: 0;">🩺 VozMédica Pro</h1>
+        
+        <div class="guia-doctor">
+            <strong>🎤 Comandos de voz permitidos:</strong><br>
+            • <b>Nombre</b> [Paciente] • <b>Cédula</b> [Número] • <b>WhatsApp</b> [Código + Número]<br>
+            • <b>Informe</b> [Diagnóstico] • <b>Récipe</b> [Medicamentos] • <b>Indicaciones</b> [Dosis]<br>
+            • <b>Exámenes</b> [Examen 1] <b>y</b> [Examen 2]... • <b>Cita</b> [Fecha de regreso]
+        </div>
+
+        <div class="mic-section">
+            <button id="btn-mic" class="btn-mic" onclick="toggleMic()">🎤</button>
+            <h3 id="status" style="margin: 10px 0;">Micrófono Apagado</h3>
+            <p id="interino"></p>
+            <small style="color: #666;">Hable después de activar el micrófono. Use "<b>y</b>" para separar exámenes.</small>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="btn" style="background: var(--primary); width: 250px; font-size: 16px;" onclick="cambiarPantalla(2)">👁️ REVISAR Y GENERAR</button>
+        </div>
+    </div>
+
+    <div id="step-2" class="step-2">
+        <h2 style="color: var(--primary); border-bottom: 2px solid #e1f5fe; padding-bottom: 10px;">📋 Revisión de Consulta</h2>
+        
+        <div class="grid">
+            <div><label>Nombre del Paciente:</label><input type="text" id="pac_nom" placeholder="No dictado"></div>
+            <div><label>Cédula de Identidad:</label><input type="text" id="pac_ced" placeholder="No dictado"></div>
+            <div><label>WhatsApp (con +):</label><input type="text" id="pac_tel" placeholder="Ej: +584120000000"></div>
+            <div><label>Fecha Próxima Cita:</label><input type="text" id="regresar" placeholder="No dictado"></div>
+            
+            <div class="full"><label>Informe Clínico:</label><textarea id="informe" placeholder="Dictar informe médico..."></textarea></div>
+            <div class="full"><label>Récipe / Prescripción:</label><textarea id="recipe" placeholder="Dictar medicamentos..."></textarea></div>
+            <div class="full"><label>Indicaciones al Paciente:</label><textarea id="indicaciones" placeholder="Dictar dosis y frecuencia..."></textarea></div>
+            <div class="full"><label>Exámenes y Otros (Orden):</label><textarea id="examenes" placeholder="Dictar lista de exámenes..."></textarea></div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn" style="background:#546e7a" onclick="cambiarPantalla(1)">🎤 CONTINUAR DICTANDO</button>
+            <button class="btn" style="background:#e53935" onclick="dictarDeNuevo()">🔄 CORREGIR (LIMPIAR TODO)</button>
+            <button class="btn" style="background:var(--secondary)" onclick="guardar()">💾 GUARDAR BD</button>
+            <button class="btn" style="background:var(--primary); font-size: 15px;" onclick="generarYLimpiar()">📄 GENERAR PDF (4 HOJAS)</button>
+            <button class="btn" style="background:var(--wa)" onclick="enviarWA()">📱 ENVIAR WHATSAPP</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let recog;
+    let activo = false;
+
+    if ('webkitSpeechRecognition' in window) {
+        recog = new webkitSpeechRecognition();
+        recog.continuous = true;
+        recog.lang = 'es-ES';
+        recog.interimResults = false;
+
+        recog.onresult = (e) => {
+            const texto = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            document.getElementById('interino').innerText = "Escuchado: " + texto;
+            procesarInteligente(texto);
+        };
+    }
+
+    function procesarInteligente(texto) {
+        const comandos = {
+            "nombre": "pac_nom", 
+            "cédula": "pac_ced", "cedula": "pac_ced",
+            "whatsapp": "pac_tel", "teléfono": "pac_tel", "telefono": "pac_tel",
+            "informe": "informe", 
+            "récipe": "recipe", "recipe": "recipe", "prescripción": "recipe", "tratamiento": "recipe",
+            "indicaciones": "indicaciones", 
+            "exámenes": "examenes", "examenes": "examenes", "laboratorio": "examenes",
+            "regresar": "regresar", "cita": "regresar"
+        };
+
+        const regex = /(nombre|cédula|cedula|whatsapp|teléfono|telefono|informe|récipe|recipe|prescripción|tratamiento|indicaciones|exámenes|examenes|laboratorio|regresar|cita)/g;
+        const bloques = texto.split(regex);
+
+        for (let i = 1; i < bloques.length; i += 2) {
+            const cmd = bloques[i].trim();
+            let val = bloques[i+1] ? bloques[i+1].trim() : "";
+            const id = comandos[cmd];
+
+            if (id && val) {
+                val = val.charAt(0).toUpperCase() + val.slice(1);
+                const campo = document.getElementById(id);
+
+                if (id === "pac_tel") {
+                    let tel = val.replace(/\s/g, '').replace(/[^\d]/g, '');
+                    if (!tel.startsWith('+') && tel.length >= 10) tel = '+' + tel;
+                    campo.value = tel;
+                }
+                else if (id === "examenes") {
+                    let limpio = val.replace(/\?/g, '').replace(/¿/g, ''); 
+                    const lista = limpio.split(/ y |, |\./);
+                    lista.forEach(item => {
+                        let ex = item.trim();
+                        if (ex.length > 2) {
+                            // SE MODIFICÓ AQUÍ: Se usa '-' en vez de viñeta Unicode para evitar el signo de interrogación en el PDF
+                            campo.value += "- " + ex.charAt(0).toUpperCase() + ex.slice(1) + "\n";
+                        }
+                    });
+                } 
+                else if (["pac_nom", "pac_ced", "regresar"].includes(id)) {
+                    campo.value = val;
+                }
+                else {
+                    let formateado = val.replace(/ y /g, ", ").replace(/\?/g, '').replace(/¿/g, '');
+                    campo.value += (campo.value ? " " : "") + formateado + ". \n";
+                }
+            }
+        }
+    }
+
+    function limpiarCampos() {
+        const ids = ["pac_nom", "pac_ced", "pac_tel", "regresar", "informe", "recipe", "indicaciones", "examenes"];
+        ids.forEach(id => document.getElementById(id).value = "");
+        document.getElementById('interino').innerText = "";
+    }
+
+    function dictarDeNuevo() {
+        if(confirm("¿Seguro que desea borrar todo para dictar desde cero?")) {
+            limpiarCampos();
+            cambiarPantalla(1);
+        }
+    }
+
+    async function generarYLimpiar() {
+        await generarPDF();
+        setTimeout(() => {
+            limpiarCampos();
+            cambiarPantalla(1);
+            alert("PDF generado con éxito. Consola lista para el siguiente paciente.");
+        }, 2000);
+    }
+
+    function toggleMic() {
+        const btn = document.getElementById('btn-mic');
+        const st = document.getElementById('status');
+        if (!activo) { 
+            recog.start(); 
+            btn.classList.add('recording'); 
+            st.innerText = "Escuchando... (Hable ahora)";
+            activo = true; 
+        } else { 
+            recog.stop(); 
+            btn.classList.remove('recording'); 
+            st.innerText = "Micrófono Apagado";
+            activo = false; 
+        }
+    }
+
+    function cambiarPantalla(s) {
+        document.getElementById('step-1').style.display = s === 1 ? 'block' : 'none';
+        document.getElementById('step-2').style.display = s === 2 ? 'block' : 'none';
+    }
+
+    async function generarPDF() {
+        const datos = {
+            paciente_nombre: document.getElementById('pac_nom').value,
+            cedula: document.getElementById('pac_ced').value,
+            paciente_telefono: document.getElementById('pac_tel').value,
+            regresar: document.getElementById('regresar').value,
+            informe: document.getElementById('informe').value,
+            recipe: document.getElementById('recipe').value,
+            indicaciones: document.getElementById('indicaciones').value,
+            examenes: document.getElementById('examenes').value
+        };
+        try {
+            const r = await fetch('/generar_pdf', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(datos) 
+            });
+            const res = await r.json();
+            if(res.url) window.open(res.url, '_blank');
+        } catch (e) { alert("Error al generar PDF."); }
+    }
+
+    function enviarWA() {
+        const tel = document.getElementById('pac_tel').value.replace(/[^\d+]/g, '');
+        const indicaciones = document.getElementById('indicaciones').value;
+        if(!tel) { alert("Debe dictar un número de WhatsApp."); return; }
+        const msg = `*VOZMEDICA - INDICACIONES*\n\n${indicaciones}`;
+        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    async function guardar() {
+        const datos = {
+            paciente: document.getElementById('pac_nom').value,
+            cedula: document.getElementById('pac_ced').value,
+            fecha: new Date().toLocaleDateString()
+        };
+        const r = await fetch('/guardar_consulta', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(datos) 
+        });
+        const res = await r.json();
+        alert(res.mensaje);
+    }
+</script>
+</body>
+</html>
