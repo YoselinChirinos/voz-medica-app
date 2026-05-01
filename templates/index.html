@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VozMédica Pro - Consola de Dictado</title>
+    <!-- Librería para generar PDF en el cliente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --wa: #25d366; --bg: #f0f4f8; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
@@ -75,10 +77,9 @@
 
         <div class="btn-group">
             <button class="btn" style="background:#546e7a" onclick="cambiarPantalla(1)">🎤 CONTINUAR DICTANDO</button>
-            <button class="btn" style="background:#e53935" onclick="dictarDeNuevo()">🔄 CORREGIR (LIMPIAR TODO)</button>
-            <button class="btn" style="background:var(--secondary)" onclick="guardar()">💾 GUARDAR BD</button>
-            <button class="btn" style="background:var(--primary); font-size: 15px;" onclick="generarYLimpiar()">📄 GENERAR PDF (4 HOJAS)</button>
-            <button class="btn" style="background:var(--wa)" onclick="enviarWA()">📱 ENVIAR WHATSAPP</button>
+            <button class="btn" style="background:#e53935" onclick="dictarDeNuevo()">🔄 LIMPIAR TODO</button>
+            <!-- BOTÓN UNIFICADO: Guarda, genera PDF y abre WhatsApp -->
+            <button id="btn-final" class="btn" style="background:var(--secondary); font-size: 15px;" onclick="flujoFinal()">💾 GUARDAR, PDF Y WHATSAPP</button>
         </div>
     </div>
 </div>
@@ -102,14 +103,12 @@
 
     function procesarInteligente(texto) {
         const comandos = {
-            "nombre": "pac_nom", 
-            "cédula": "pac_ced", "cedula": "pac_ced",
+            "nombre": "pac_nom", "cédula": "pac_ced", "cedula": "pac_ced",
             "whatsapp": "pac_tel", "teléfono": "pac_tel", "telefono": "pac_tel",
-            "informe": "informe", 
-            "récipe": "recipe", "recipe": "recipe", "prescripción": "recipe", "tratamiento": "recipe",
-            "indicaciones": "indicaciones", 
-            "exámenes": "examenes", "examenes": "examenes", "laboratorio": "examenes",
-            "regresar": "regresar", "cita": "regresar"
+            "informe": "informe", "récipe": "recipe", "recipe": "recipe", 
+            "prescripción": "recipe", "tratamiento": "recipe",
+            "indicaciones": "indicaciones", "exámenes": "examenes", 
+            "examenes": "examenes", "laboratorio": "examenes", "regresar": "regresar", "cita": "regresar"
         };
 
         const regex = /(nombre|cédula|cedula|whatsapp|teléfono|telefono|informe|récipe|recipe|prescripción|tratamiento|indicaciones|exámenes|examenes|laboratorio|regresar|cita)/g;
@@ -128,49 +127,121 @@
                     let tel = val.replace(/\s/g, '').replace(/[^\d]/g, '');
                     if (!tel.startsWith('+') && tel.length >= 10) tel = '+' + tel;
                     campo.value = tel;
-                }
-                else if (id === "examenes") {
-                    let limpio = val.replace(/\?/g, '').replace(/¿/g, ''); 
-                    const lista = limpio.split(/ y |, |\./);
+                } else if (id === "examenes") {
+                    const lista = val.split(/ y |, |\./);
                     lista.forEach(item => {
                         let ex = item.trim();
-                        if (ex.length > 2) {
-                            // SE MODIFICÓ AQUÍ: Se usa '-' en vez de viñeta Unicode para evitar el signo de interrogación en el PDF
-                            campo.value += "- " + ex.charAt(0).toUpperCase() + ex.slice(1) + "\n";
-                        }
+                        if (ex.length > 2) campo.value += "- " + ex.charAt(0).toUpperCase() + ex.slice(1) + "\n";
                     });
-                } 
-                else if (["pac_nom", "pac_ced", "regresar"].includes(id)) {
+                } else if (["pac_nom", "pac_ced", "regresar"].includes(id)) {
                     campo.value = val;
-                }
-                else {
-                    let formateado = val.replace(/ y /g, ", ").replace(/\?/g, '').replace(/¿/g, '');
-                    campo.value += (campo.value ? " " : "") + formateado + ". \n";
+                } else {
+                    campo.value += (campo.value ? " " : "") + val.replace(/ y /g, ", ") + ". \n";
                 }
             }
         }
     }
 
-    function limpiarCampos() {
-        const ids = ["pac_nom", "pac_ced", "pac_tel", "regresar", "informe", "recipe", "indicaciones", "examenes"];
-        ids.forEach(id => document.getElementById(id).value = "");
-        document.getElementById('interino').innerText = "";
-    }
+    // FLUJO FINAL: Guarda en DB, Genera PDF y activa WhatsApp
+    async function flujoFinal() {
+        const btn = document.getElementById('btn-final');
+        btn.disabled = true;
+        btn.innerText = "PROCESANDO...";
 
-    function dictarDeNuevo() {
-        if(confirm("¿Seguro que desea borrar todo para dictar desde cero?")) {
-            limpiarCampos();
-            cambiarPantalla(1);
+        const datos = {
+            paciente: document.getElementById('pac_nom').value,
+            cedula: document.getElementById('pac_ced').value,
+            telefono: document.getElementById('pac_tel').value,
+            informe: document.getElementById('informe').value,
+            recipe: document.getElementById('recipe').value,
+            indicaciones: document.getElementById('indicaciones').value,
+            examenes: document.getElementById('examenes').value,
+            proxima_cita: document.getElementById('regresar').value
+        };
+
+        if (!datos.paciente || !datos.cedula) {
+            alert("Por favor, asegúrese de tener al menos el nombre y la cédula.");
+            btn.disabled = false;
+            btn.innerText = "💾 GUARDAR, PDF Y WHATSAPP";
+            return;
+        }
+
+        try {
+            // 1. GUARDAR EN BASE DE DATOS
+            const resp = await fetch('/guardar_consulta', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(datos)
+            });
+            const resDB = await resp.json();
+
+            if (resp.ok) {
+                // 2. GENERAR PDF (4 hojas simuladas en una estructura lógica)
+                generarPDFPro(datos);
+
+                // 3. ENVIAR WHATSAPP
+                enviarWA(datos);
+
+                alert("Proceso completado: Guardado en DB y PDF generado.");
+                limpiarCampos();
+                cambiarPantalla(1);
+            } else {
+                alert("Error al guardar: " + resDB.mensaje);
+            }
+        } catch (e) {
+            alert("Error en el sistema. Verifique la conexión.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "💾 GUARDAR, PDF Y WHATSAPP";
         }
     }
 
-    async function generarYLimpiar() {
-        await generarPDF();
-        setTimeout(() => {
-            limpiarCampos();
-            cambiarPantalla(1);
-            alert("PDF generado con éxito. Consola lista para el siguiente paciente.");
-        }, 2000);
+    function generarPDFPro(d) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const margin = 20;
+
+        const paginas = [
+            { titulo: "INFORME MÉDICO", contenido: d.informe },
+            { titulo: "RÉCIPE / PRESCRIPCIÓN", contenido: d.recipe },
+            { titulo: "INDICACIONES", contenido: d.indicaciones },
+            { titulo: "ORDEN DE EXÁMENES", contenido: d.examenes }
+        ];
+
+        paginas.forEach((pag, index) => {
+            if (index > 0) doc.addPage();
+            
+            // Encabezado
+            doc.setFontSize(16);
+            doc.setTextColor(2, 119, 189);
+            doc.text("VOZMÉDICA PRO", 105, 15, { align: "center" });
+            
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text(pag.titulo, 105, 25, { align: "center" });
+            doc.line(20, 28, 190, 28);
+
+            // Datos Paciente
+            doc.setFontSize(10);
+            doc.text(`Paciente: ${d.paciente}`, margin, 40);
+            doc.text(`Cédula: ${d.cedula}`, margin, 45);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 150, 40);
+            if(d.proxima_cita) doc.text(`Próxima Cita: ${d.proxima_cita}`, margin, 50);
+
+            // Contenido
+            doc.setFontSize(12);
+            const splitText = doc.splitTextToSize(pag.contenido || "No se registraron datos.", 170);
+            doc.text(splitText, margin, 65);
+        });
+
+        doc.save(`Consulta_${d.paciente}.pdf`);
+    }
+
+    function enviarWA(d) {
+        if(!d.telefono) return;
+        const tel = d.telefono.replace(/[^\d+]/g, '');
+        const msg = `*VOZMÉDICA PRO*\n\nHola ${d.paciente}, adjunto sus indicaciones:\n${d.indicaciones}\n\n_Próxima cita: ${d.proxima_cita || 'Por definir'}_`;
+        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`, '_blank');
     }
 
     function toggleMic() {
@@ -179,7 +250,7 @@
         if (!activo) { 
             recog.start(); 
             btn.classList.add('recording'); 
-            st.innerText = "Escuchando... (Hable ahora)";
+            st.innerText = "Escuchando...";
             activo = true; 
         } else { 
             recog.stop(); 
@@ -194,49 +265,14 @@
         document.getElementById('step-2').style.display = s === 2 ? 'block' : 'none';
     }
 
-    async function generarPDF() {
-        const datos = {
-            paciente_nombre: document.getElementById('pac_nom').value,
-            cedula: document.getElementById('pac_ced').value,
-            paciente_telefono: document.getElementById('pac_tel').value,
-            regresar: document.getElementById('regresar').value,
-            informe: document.getElementById('informe').value,
-            recipe: document.getElementById('recipe').value,
-            indicaciones: document.getElementById('indicaciones').value,
-            examenes: document.getElementById('examenes').value
-        };
-        try {
-            const r = await fetch('/generar_pdf', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify(datos) 
-            });
-            const res = await r.json();
-            if(res.url) window.open(res.url, '_blank');
-        } catch (e) { alert("Error al generar PDF."); }
+    function limpiarCampos() {
+        const ids = ["pac_nom", "pac_ced", "pac_tel", "regresar", "informe", "recipe", "indicaciones", "examenes"];
+        ids.forEach(id => document.getElementById(id).value = "");
+        document.getElementById('interino').innerText = "";
     }
 
-    function enviarWA() {
-        const tel = document.getElementById('pac_tel').value.replace(/[^\d+]/g, '');
-        const indicaciones = document.getElementById('indicaciones').value;
-        if(!tel) { alert("Debe dictar un número de WhatsApp."); return; }
-        const msg = `*VOZMEDICA - INDICACIONES*\n\n${indicaciones}`;
-        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    async function guardar() {
-        const datos = {
-            paciente: document.getElementById('pac_nom').value,
-            cedula: document.getElementById('pac_ced').value,
-            fecha: new Date().toLocaleDateString()
-        };
-        const r = await fetch('/guardar_consulta', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify(datos) 
-        });
-        const res = await r.json();
-        alert(res.mensaje);
+    function dictarDeNuevo() {
+        if(confirm("¿Borrar todo?")) { limpiarCampos(); cambiarPantalla(1); }
     }
 </script>
 </body>
