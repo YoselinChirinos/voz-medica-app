@@ -1,14 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from flask_cors import CORS  # Importante para evitar el error de conexión
+from flask_cors import CORS #
 import os
 from supabase import create_client, Client
 
 app = Flask(__name__)
+CORS(app) # Permite la conexión desde el navegador sin errores
 
-# MEJORA: CORS permite que el navegador acepte la respuesta de Render
-CORS(app)
-
-# CONFIGURACIÓN DE SEGURIDAD
+# CONFIGURACIÓN DE SEGURIDAD (Mantenemos tus claves)
 app.secret_key = 'clave_secreta_para_tesis_yoselin' 
 PASSWORD_DOCTOR = "medico20262620" 
 
@@ -16,8 +14,6 @@ PASSWORD_DOCTOR = "medico20262620"
 SUPABASE_URL = "https://gzlccjdaxdxrrbaqemgo.supabase.co"
 SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# --- RUTAS DE ACCESO Y SEGURIDAD ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -27,25 +23,7 @@ def login():
             return redirect(url_for('index'))
         else:
             return "Contraseña incorrecta. Intenta de nuevo."
-            
-    return '''
-        <div style="text-align:center; margin-top:100px; font-family:Arial;">
-            <h2 style="color:#2c3e50;">Voz Médica - Acceso Privado</h2>
-            <p>Por favor, introduzca la clave de acceso para comenzar la prueba.</p>
-            <form method="post">
-                <input type="password" name="password" placeholder="Contraseña" style="padding:10px; width:200px;">
-                <br><br>
-                <button type="submit" style="padding:10px 20px; background-color:#3498db; color:white; border:none; border-radius:5px; cursor:pointer;">
-                    Entrar al Sistema
-                </button>
-            </form>
-        </div>
-    '''
-
-@app.route('/logout')
-def logout():
-    session.pop('autenticado', None)
-    return redirect(url_for('login'))
+    return render_template('login.html') # O el bloque HTML que prefieras
 
 @app.route('/')
 def index():
@@ -53,22 +31,14 @@ def index():
         return redirect(url_for('login'))
     return render_template('index.html')
 
-# --- RUTA PARA GUARDAR DATOS MEJORADA ---
-
 @app.route('/guardar', methods=['POST'])
 def guardar_datos():
-    # Verificación de seguridad por sesión
     if not session.get('autenticado'):
         return jsonify({"status": "error", "message": "No autorizado"}), 401
-
     try:
         data = request.json
-        if not data:
-            return jsonify({"status": "error", "message": "No se recibieron datos"}), 400
-
-        # MEJORA: Mapeo de todos los campos que envía el nuevo index.html
-        # Esto asegura que se guarde el informe, récipe, etc., en sus columnas
-        response = supabase.table('consultas').insert({
+        # Insertamos en tu tabla de Supabase con los nombres correctos
+        supabase.table('consultas').insert({
             "nombre": data.get('nombre'),
             "cedula": data.get('cedula'),
             "telefono": data.get('telefono'),
@@ -78,15 +48,11 @@ def guardar_datos():
             "examenes": data.get('examenes'),
             "proxima_cita": data.get('cita')
         }).execute()
-
-        return jsonify({"status": "success", "message": "Consulta guardada exitosamente"}), 200
-    
+        return jsonify({"status": "success"}), 200
     except Exception as e:
-        # Imprime el error en la consola de Render para que puedas verlo
-        print(f"Error en Supabase: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    # MEJORA: Configuración para que Render detecte el puerto automáticamente
+    # Configuración esencial para Render
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

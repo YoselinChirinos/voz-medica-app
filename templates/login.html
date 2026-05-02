@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - VozMédica</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 320px; }
+        h2 { color: #0277bd; }
+        input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #0277bd; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #01579b; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>VozMédica Pro</h2>
+        <p>Introduzca su clave médica</p>
+        <form method="POST">
+            <input type="password" name="password" placeholder="Contraseña" required>
+            <button type="submit">Entrar al Sistema</button>
+        </form>
+    </div>
+</body>
+</html>

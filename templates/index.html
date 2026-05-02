@@ -3,161 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VozMédica Pro - Consola Profesional</title>
-    <!-- Librerías Externas -->
+    <title>VozMédica Pro - Consola de Dictado</title>
+    <!-- Librerías para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
-        :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --bg: #f0f4f8; --text: #333; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --bg: #f0f4f8; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); text-align: center; }
         
-        /* Pantalla de Seguridad */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 1000; display: flex; align-items: center; justify-content: center; transition: 0.5s; }
-        .login-card { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.3); width: 350px; }
-        
-        /* Contenedor Principal */
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        
-        .header { text-align: center; margin-bottom: 25px; }
-        .header h1 { color: var(--primary); margin: 0; font-size: 2em; }
-
-        .guia-doctor { background: #e3f2fd; border-left: 6px solid var(--primary); padding: 15px; margin-bottom: 25px; border-radius: 4px; font-size: 0.9em; }
-        
-        .mic-section { text-align: center; padding: 30px; border: 2px dashed #cfd8dc; border-radius: 20px; background: #fafafa; margin-bottom: 25px; }
-        .btn-mic { background: var(--danger); color: white; border: none; border-radius: 50%; width: 80px; height: 80px; font-size: 35px; cursor: pointer; transition: 0.3s; }
-        .btn-mic.recording { background: var(--secondary); transform: scale(1.1); animation: pulse 1.5s infinite; }
+        /* Sección Micrófono */
+        .mic-box { text-align: center; padding: 20px; border: 2px dashed #ccc; border-radius: 15px; margin-bottom: 20px; background: #fafafa; }
+        .btn-mic { background: var(--danger); color: white; border: none; border-radius: 50%; width: 70px; height: 70px; font-size: 30px; cursor: pointer; transition: 0.3s; }
+        .btn-mic.recording { background: var(--secondary); animation: pulse 1.5s infinite; }
         
         /* Formulario */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .full { grid-column: span 2; }
-        label { font-weight: 600; color: var(--primary); display: block; margin-bottom: 5px; font-size: 0.85em; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 10px; font-size: 15px; box-sizing: border-box; }
-        textarea { height: 100px; resize: vertical; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; color: var(--primary); }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        textarea { height: 80px; }
 
-        .btn-group { display: flex; gap: 15px; margin-top: 30px; justify-content: center; }
-        .btn { padding: 14px 25px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 15px; }
-        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
-        .btn:disabled { background: #ccc !important; }
+        .btn-final { background: var(--secondary); color: white; border: none; padding: 15px 30px; border-radius: 10px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-final:disabled { background: #ccc; }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
-        #interino { font-style: italic; color: var(--primary); margin-top: 15px; min-height: 24px; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
     </style>
 </head>
 <body>
 
-<!-- Pantalla de Login (Seguridad) -->
-<div id="login-screen">
-    <div class="login-card">
-        <h2 style="color: var(--primary);">VozMédica Pro</h2>
-        <p>Introduzca su clave de acceso profesional</p>
-        <input type="password" id="medico-key" placeholder="Clave Médica" style="margin-bottom:20px; text-align:center;">
-        <button class="btn" style="background: var(--primary); width: 100%;" onclick="verificarAcceso()">CONFIGURAR ACCESO</button>
-    </div>
-</div>
-
 <div class="container">
-    <div id="step-1">
-        <div class="header">
-            <h1>🩺 Consola de Dictado</h1>
-            <p>Innovación para el Especialista Moderno</p>
-        </div>
-        
-        <div class="guia-doctor">
-            Use comandos como: <b>Nombre</b>, <b>Cédula</b>, <b>WhatsApp</b>, <b>Informe</b>, <b>Récipe</b>, <b>Cita</b>.
-        </div>
-
-        <div class="mic-section">
-            <button id="btn-mic" class="btn-mic" onclick="toggleMic()">🎤</button>
-            <h3 id="status">Micrófono Listo</h3>
-            <p id="interino"></p>
-        </div>
-
-        <div style="text-align: center;">
-            <button class="btn" style="background: var(--primary);" onclick="cambiarPantalla(2)">📝 REVISAR Y FINALIZAR</button>
-        </div>
+    <h1>🩺 VozMédica Pro</h1>
+    
+    <div class="mic-box">
+        <button id="btn-mic" class="btn-mic" onclick="toggleMic()">🎤</button>
+        <p id="status">Presiona para dictar</p>
+        <p id="interino" style="font-style: italic; color: #666;"></p>
     </div>
 
-    <div id="step-2" style="display:none;">
-        <h2 style="color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px;">📋 Validación de Consulta</h2>
+    <div class="grid">
+        <div><label>Nombre Paciente:</label><input type="text" id="pac_nom"></div>
+        <div><label>Cédula:</label><input type="text" id="pac_ced"></div>
+        <div><label>WhatsApp:</label><input type="text" id="pac_tel" placeholder="+58414..."></div>
+        <div><label>Próxima Cita:</label><input type="text" id="regresar"></div>
         
-        <div class="grid">
-            <div><label>Nombre Paciente:</label><input type="text" id="pac_nom"></div>
-            <div><label>Cédula:</label><input type="text" id="pac_ced"></div>
-            <div><label>WhatsApp (con +):</label><input type="text" id="pac_tel"></div>
-            <div><label>Próxima Cita:</label><input type="text" id="regresar"></div>
-            <div class="full"><label>Informe Clínico:</label><textarea id="informe"></textarea></div>
-            <div class="full"><label>Récipe / Tratamiento:</label><textarea id="recipe"></textarea></div>
-            <div class="full"><label>Indicaciones:</label><textarea id="indicaciones"></textarea></div>
-            <div class="full"><label>Exámenes:</label><textarea id="examenes"></textarea></div>
-        </div>
-
-        <div class="btn-group">
-            <button class="btn" style="background:#607d8b" onclick="cambiarPantalla(1)">🎤 SEGUIR DICTANDO</button>
-            <button id="btn-final" class="btn" style="background:var(--secondary)" onclick="flujoFinalSeguro()">🚀 GUARDAR, PDF Y WHATSAPP</button>
-        </div>
+        <div class="full"><label>Informe Clínico:</label><textarea id="informe"></textarea></div>
+        <div class="full"><label>Récipe:</label><textarea id="recipe"></textarea></div>
+        <div class="full"><label>Indicaciones:</label><textarea id="indicaciones"></textarea></div>
+        <div class="full"><label>Exámenes:</label><textarea id="examenes"></textarea></div>
     </div>
+
+    <button id="btn-main" class="btn-final" onclick="flujoCompleto()">🚀 GUARDAR, PDF Y WHATSAPP</button>
 </div>
 
 <script>
-    let recog;
-    let activo = false;
-    let tokenSeguridad = "";
+    let recognition;
+    let isRecording = false;
 
-    // 1. Manejo de Seguridad Inicial
-    function verificarAcceso() {
-        const key = document.getElementById('medico-key').value;
-        if(key.length >= 4) {
-            tokenSeguridad = key;
-            document.getElementById('login-screen').style.opacity = '0';
-            setTimeout(() => { document.getElementById('login-screen').style.display = 'none'; }, 500);
+    // Configuración de Reconocimiento de Voz
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'es-ES';
+
+        recognition.onresult = (event) => {
+            let texto = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    procesarComando(event.results[i][0].transcript.toLowerCase());
+                } else {
+                    texto += event.results[i][0].transcript;
+                }
+            }
+            document.getElementById('interino').innerText = texto;
+        };
+    }
+
+    function toggleMic() {
+        const btn = document.getElementById('btn-mic');
+        if (!isRecording) {
+            recognition.start();
+            btn.classList.add('recording');
+            document.getElementById('status').innerText = "Escuchando...";
+            isRecording = true;
         } else {
-            alert("Ingrese una clave válida.");
+            recognition.stop();
+            btn.classList.remove('recording');
+            document.getElementById('status').innerText = "Presiona para dictar";
+            isRecording = false;
         }
     }
 
-    // 2. Configuración de Voz
-    if ('webkitSpeechRecognition' in window) {
-        recog = new webkitSpeechRecognition();
-        recog.continuous = true;
-        recog.lang = 'es-ES';
-        recog.interimResults = false;
-
-        recog.onresult = (e) => {
-            const texto = e.results[e.results.length - 1][0].transcript.toLowerCase();
-            document.getElementById('interino').innerText = "Voz detectada: " + texto;
-            procesarTexto(texto);
-        };
-    }
-
-    function procesarTexto(t) {
+    function procesarComando(t) {
         const mapeo = {
-            "nombre": "pac_nom", "cedula": "pac_ced", "cédula": "pac_ced",
-            "whatsapp": "pac_tel", "teléfono": "pac_tel", "informe": "informe",
-            "recipe": "recipe", "récipe": "recipe", "indicaciones": "indicaciones",
-            "examenes": "examenes", "exámenes": "examenes", "cita": "regresar"
+            "nombre": "pac_nom", "cédula": "pac_ced", "cedula": "pac_ced",
+            "whatsapp": "pac_tel", "informe": "informe", "récipe": "recipe", 
+            "recipe": "recipe", "indicaciones": "indicaciones", "exámenes": "examenes",
+            "examenes": "examenes", "cita": "regresar"
         };
-        const regex = /(nombre|cedula|cédula|whatsapp|teléfono|informe|recipe|récipe|indicaciones|examenes|exámenes|cita)/g;
-        const partes = t.split(regex);
-
-        for (let i = 1; i < partes.length; i += 2) {
-            const cmd = partes[i].trim();
-            const val = partes[i+1] ? partes[i+1].trim() : "";
-            const id = mapeo[cmd];
-            if (id && val) {
-                const input = document.getElementById(id);
-                const valorFormateado = val.charAt(0).toUpperCase() + val.slice(1);
-                if(id === "pac_tel") input.value = valorFormateado.replace(/\s/g, '');
-                else if(["pac_nom", "pac_ced", "regresar"].includes(id)) input.value = valorFormateado;
-                else input.value += (input.value ? " " : "") + valorFormateado + ". ";
+        
+        for (const [clave, id] of Object.entries(mapeo)) {
+            if (t.includes(clave)) {
+                let valor = t.split(clave)[1].trim();
+                if (valor) {
+                    const campo = document.getElementById(id);
+                    if (id === "pac_tel") valor = valor.replace(/\s/g, '');
+                    campo.value = valor.charAt(0).toUpperCase() + valor.slice(1);
+                }
             }
         }
     }
 
-    // 3. Flujo de Salida (Backend + PDF + WA)
-    async function flujoFinalSeguro() {
-        const btn = document.getElementById('btn-final');
+    // FLUJO PRINCIPAL
+    async function flujoCompleto() {
+        const btn = document.getElementById('btn-main');
         const datos = {
-            paciente: document.getElementById('pac_nom').value,
+            nombre: document.getElementById('pac_nom').value,
             cedula: document.getElementById('pac_ced').value,
             telefono: document.getElementById('pac_tel').value,
             informe: document.getElementById('informe').value,
@@ -167,39 +130,30 @@
             cita: document.getElementById('regresar').value
         };
 
-        if(!datos.paciente) return alert("El nombre del paciente es requerido.");
+        if (!datos.nombre) return alert("Por favor, ingrese el nombre del paciente.");
 
         btn.disabled = true;
-        btn.innerText = "⌛ ENVIANDO...";
+        btn.innerText = "⌛ PROCESANDO...";
 
         try {
-            // PETICIÓN AL BACKEND CON SEGURIDAD
-            const respuesta = await fetch('/guardar_consulta', {
+            // 1. Guardar en Supabase a través de tu app.py
+            const response = await fetch('/guardar', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': tokenSeguridad // Clave que ingresó el médico
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datos)
             });
 
-            if (respuesta.status === 401) {
-                alert("❌ Clave médica incorrecta. No se pudo guardar.");
-                location.reload();
-                return;
-            }
-
-            if (respuesta.ok) {
+            if (response.ok) {
+                // 2. Generar PDF
                 generarPDF(datos);
-                enviarWhatsApp(datos);
-                alert("✅ Proceso Exitoso: Guardado y documentos generados.");
-                limpiar();
-                cambiarPantalla(1);
+                // 3. Enviar WhatsApp
+                enviarWA(datos);
+                alert("✅ Éxito: Guardado, PDF generado y WhatsApp abierto.");
             } else {
-                throw new Error();
+                alert("❌ Error al guardar en la base de datos.");
             }
-        } catch (e) {
-            alert("⚠️ Error de conexión con Render. El servidor podría estar despertando. Intente en 30 segundos.");
+        } catch (error) {
+            alert("❌ Error de conexión con el servidor.");
         } finally {
             btn.disabled = false;
             btn.innerText = "🚀 GUARDAR, PDF Y WHATSAPP";
@@ -209,59 +163,31 @@
     function generarPDF(d) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const paginas = [
-            {t: "INFORME MÉDICO", c: d.informe},
-            {t: "RÉCIPE / TRATAMIENTO", c: d.recipe},
-            {t: "INDICACIONES", c: d.indicaciones},
-            {t: "ÓRDENES DE EXÁMENES", c: d.examenes}
-        ];
-
-        paginas.forEach((p, i) => {
-            if(i > 0) doc.addPage();
-            doc.setFillColor(2, 119, 189);
-            doc.rect(0, 0, 210, 35, 'F');
-            doc.setTextColor(255);
-            doc.setFontSize(20);
-            doc.text("VOZMÉDICA PRO", 105, 18, {align:"center"});
-            doc.setFontSize(12);
-            doc.text(p.t, 105, 28, {align:"center"});
-
-            doc.setTextColor(0);
-            doc.text(`Paciente: ${d.paciente}`, 20, 50);
-            doc.text(`Cédula: ${d.cedula}`, 20, 58);
-            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 150, 50);
-            
-            doc.line(20, 65, 190, 65);
-            doc.setFontSize(13);
-            const lineas = doc.splitTextToSize(p.c || "No se registraron datos en esta sección.", 170);
-            doc.text(lineas, 20, 80);
-            
-            doc.setFontSize(9);
-            doc.setTextColor(150);
-            doc.text("Generado por VozMédica Pro - Sistema de Dictado Inteligente", 105, 285, {align:"center"});
-        });
-        doc.save(`Consulta_${d.paciente}.pdf`);
+        
+        doc.setFontSize(20);
+        doc.setTextColor(2, 119, 189);
+        doc.text("VOZMÉDICA PRO - INFORME", 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Paciente: ${d.nombre}`, 20, 40);
+        doc.text(`Cédula: ${d.cedula}`, 20, 50);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 60);
+        
+        doc.line(20, 65, 190, 65);
+        doc.text("INDICACIONES Y TRATAMIENTO:", 20, 80);
+        doc.setFontSize(10);
+        const lineas = doc.splitTextToSize(d.indicaciones || "Sin indicaciones adicionales.", 170);
+        doc.text(lineas, 20, 90);
+        
+        doc.save(`Consulta_${d.nombre}.pdf`);
     }
 
-    function enviarWhatsApp(d) {
-        if(!d.telefono) return;
-        const msg = `*VOZMÉDICA PRO*\n\nHola *${d.paciente}*, adjuntamos sus indicaciones:\n\n${d.indicaciones}\n\n*Próxima Cita:* ${d.cita || 'Por definir'}`;
-        window.open(`https://api.whatsapp.com/send?phone=${d.telefono.replace(/[^\d]/g, '')}&text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    function toggleMic() {
-        const btn = document.getElementById('btn-mic');
-        if (!activo) { recog.start(); btn.classList.add('recording'); activo = true; }
-        else { recog.stop(); btn.classList.remove('recording'); activo = false; }
-    }
-
-    function cambiarPantalla(s) {
-        document.getElementById('step-1').style.display = s === 1 ? 'block' : 'none';
-        document.getElementById('step-2').style.display = s === 2 ? 'block' : 'none';
-    }
-
-    function limpiar() {
-        ["pac_nom", "pac_ced", "pac_tel", "regresar", "informe", "recipe", "indicaciones", "examenes"].forEach(id => document.getElementById(id).value = "");
+    function enviarWA(d) {
+        if (!d.telefono) return;
+        const mensaje = `*VOZMÉDICA PRO*\n\nHola *${d.nombre}*, aquí tienes tus indicaciones:\n\n${d.indicaciones}\n\n*Próxima cita:* ${d.cita}`;
+        const url = `https://wa.me/${d.telefono.replace('+', '')}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank');
     }
 </script>
 </body>
