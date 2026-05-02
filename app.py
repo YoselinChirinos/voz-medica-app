@@ -5,12 +5,12 @@ from supabase import create_client, Client
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_voz_medica_2026'
 
-# SEGURIDAD: Clave de acceso para el médico
+# SEGURIDAD: Acceso médico
 PASSWORD_MEDICO = "medico20262620"
 
-# CREDENCIALES RESTAURADAS
+# CREDENCIALES (Verifica que sea la llave 'anon public')
 SUPABASE_URL = "https://gzlccjdaxdxrrbaqemgo.supabase.co"
-SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI" # He restaurado tu llave aquí
+SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXL"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -42,10 +42,12 @@ def guardar_datos():
             "indicaciones": data.get('indicaciones'),
             "examenes": data.get('examenes')
         }
-        supabase.table('consultas').insert(registro).execute()
+        # Intento de inserción
+        res = supabase.table('consultas').insert(registro).execute()
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # Esto captura el error 401 y lo muestra amigablemente
+        return jsonify({"status": "error", "message": str(e)}), 401
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
