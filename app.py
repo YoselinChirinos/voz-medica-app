@@ -5,12 +5,12 @@ from supabase import create_client, Client
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_voz_medica_2026'
 
-# SEGURIDAD: Acceso médico
+# SEGURIDAD: Credenciales de acceso
 PASSWORD_MEDICO = "medico20262620"
 
-# CREDENCIALES (Verifica que sea la llave 'anon public')
+# CONFIGURACIÓN DE SUPABASE
 SUPABASE_URL = "https://gzlccjdaxdxrrbaqemgo.supabase.co"
-SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXL"
+SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -34,6 +34,7 @@ def guardar_datos():
         return jsonify({"status": "error", "message": "No autorizado"}), 401
     try:
         data = request.json
+        # Mapeo exacto para la tabla en Render/Supabase
         registro = {
             "nombre_paciente": data.get('nombre'),
             "cedula": data.get('cedula'),
@@ -42,11 +43,9 @@ def guardar_datos():
             "indicaciones": data.get('indicaciones'),
             "examenes": data.get('examenes')
         }
-        # Intento de inserción
-        res = supabase.table('consultas').insert(registro).execute()
+        supabase.table('consultas').insert(registro).execute()
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        # Esto captura el error 401 y lo muestra amigablemente
         return jsonify({"status": "error", "message": str(e)}), 401
 
 if __name__ == '__main__':

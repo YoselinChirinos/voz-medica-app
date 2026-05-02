@@ -2,140 +2,196 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>VozMédica Pro - Control Total</title>
+    <title>VozMédica Pro - Consola Médica</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --bg: #f0f4f8; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        
-        /* Estilos del Formulario */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .mic-box { text-align: center; margin-bottom: 20px; border: 2px dashed var(--primary); padding: 15px; border-radius: 10px; }
+        .btn-mic { background: var(--danger); color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; cursor: pointer; }
+        .btn-mic.recording { background: var(--secondary); animation: pulse 1.5s infinite; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .full { grid-column: span 2; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        
-        /* Botonera de flujo */
+        label { font-weight: bold; color: var(--primary); display: block; margin-top: 10px; font-size: 14px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        textarea { height: 100px; }
         .action-bar { display: flex; gap: 10px; margin-top: 25px; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
-        .btn-save { background: var(--primary); }
-        .btn-pdf { background: #607d8b; display: none; } /* Se activa tras guardar */
-        .btn-wa { background: var(--secondary); display: none; } /* Se activa tras PDF */
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
         .btn-clear { background: #757575; }
-
-        .preview-pane { 
-            display: none; 
-            margin-top: 20px; 
-            padding: 20px; 
-            background: #fff9c4; 
-            border: 2px solid #fbc02d; 
-            border-radius: 10px; 
-        }
+        .btn-save { background: var(--primary); }
+        .btn-wa { background: var(--secondary); display: none; }
+        #preview { display: none; margin-top: 20px; padding: 15px; background: #e3f2fd; border: 1px solid var(--primary); border-radius: 10px; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="color: var(--primary); text-align: center;">🩺 Consola Médica</h2>
-    
-    <!-- Campos del Formulario -->
+    <div class="mic-box">
+        <button id="btn-mic" class="btn-mic" onclick="toggleMic()">🎤</button>
+        <p id="status">Diga: "Nombre...", "Cédula...", "Informe...", etc.</p>
+        <div id="interino" style="color: #888; font-style: italic; font-size: 14px;"></div>
+    </div>
+
     <div class="grid">
-        <div><label>Paciente:</label><input type="text" id="pac_nom"></div>
+        <div><label>Nombre del Paciente:</label><input type="text" id="pac_nom"></div>
         <div><label>Cédula:</label><input type="text" id="pac_ced"></div>
-        <div><label>WhatsApp:</label><input type="text" id="pac_tel"></div>
-        <div class="full"><label>Indicaciones:</label><textarea id="indicaciones"></textarea></div>
+        <div class="full"><label>Informe Clínico:</label><textarea id="informe"></textarea></div>
         <div class="full"><label>Récipe:</label><textarea id="recipe"></textarea></div>
+        <div class="full"><label>Indicaciones de Uso:</label><textarea id="indicaciones"></textarea></div>
+        <div class="full"><label>Exámenes Solicitados:</label><textarea id="examenes"></textarea></div>
+        <div class="full" style="display:none;"><input type="text" id="pac_tel"></div>
     </div>
 
-    <!-- Panel de Previsualización -->
     <div id="preview" class="preview-pane">
-        <h3>🔍 Revisión del Documento</h3>
-        <div id="preview-content"></div>
-        <p style="font-size: 12px; color: #555;">Si todo es correcto, descargue el PDF y envíe por WhatsApp.</p>
+        <h3>🔍 Documento Generado</h3>
+        <p id="preview-text">Datos guardados. Revise el PDF descargado antes de enviar por WhatsApp.</p>
     </div>
 
-    <!-- Botonera Dinámica -->
     <div class="action-bar">
-        <button class="btn btn-clear" onclick="location.reload()">🔄 NUEVO</button>
-        <button id="btn-save" class="btn btn-save" onclick="guardarEnNube()">1. GUARDAR EN NUBE</button>
-        <button id="btn-pdf" class="btn btn-pdf" onclick="generarYRevisarPDF()">2. VER/DESCARGAR PDF</button>
-        <button id="btn-wa" class="btn btn-wa" onclick="enviarWhatsApp()">3. ENVIAR A WHATSAPP</button>
+        <button class="btn btn-clear" onclick="limpiar()">🔄 CORREGIR</button>
+        <button id="btn-save" class="btn btn-save" onclick="guardarYGenerar()">🚀 GUARDAR Y VER PDF</button>
+        <button id="btn-wa" class="btn btn-wa" onclick="enviarWhatsApp()">📲 ENVIAR A WHATSAPP</button>
     </div>
 </div>
 
 <script>
-    // 1. GUARDAR EN NUBE (Soluciona el error 401)
-    async function guardarEnNube() {
-        const btn = document.getElementById('btn-save');
-        const datos = {
+    let recognition;
+    let isRecording = false;
+
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'es-ES';
+
+        recognition.onresult = (event) => {
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    procesarVoz(event.results[i][0].transcript.toLowerCase());
+                } else {
+                    document.getElementById('interino').innerText = event.results[i][0].transcript;
+                }
+            }
+        };
+    }
+
+    function toggleMic() {
+        if (!isRecording) { recognition.start(); isRecording = true; document.getElementById('btn-mic').classList.add('recording'); }
+        else { recognition.stop(); isRecording = false; document.getElementById('btn-mic').classList.remove('recording'); }
+    }
+
+    function procesarVoz(t) {
+        // Puntuación Inteligente
+        let texto = t.replace(/ coma /g, ", ").replace(/ punto /g, ". ").replace(/ nueva línea /g, "\n").trim();
+        
+        const comandos = [
+            { key: "nombre", id: "pac_nom" },
+            { key: "cédula", id: "pac_ced" },
+            { key: "cedula", id: "pac_ced" },
+            { key: "informe", id: "informe" },
+            { key: "récipe", id: "recipe" },
+            { key: "recipe", id: "recipe" },
+            { key: "indicaciones", id: "indicaciones" },
+            { key: "exámenes", id: "examenes" },
+            { key: "examenes", id: "examenes" }
+        ];
+
+        comandos.forEach(cmd => {
+            if (texto.includes(cmd.key)) {
+                let valor = texto.split(cmd.key)[1].trim();
+                if (valor) {
+                    let campo = document.getElementById(cmd.id);
+                    let sep = campo.value ? ", " : "";
+                    campo.value += sep + valor.charAt(0).toUpperCase() + valor.slice(1);
+                }
+            }
+        });
+    }
+
+    function limpiar() { if(confirm("¿Desea limpiar los campos para corregir?")) location.reload(); }
+
+    async function guardarYGenerar() {
+        const d = {
             nombre: document.getElementById('pac_nom').value,
             cedula: document.getElementById('pac_ced').value,
+            informe: document.getElementById('informe').value,
+            recipe: document.getElementById('recipe').value,
             indicaciones: document.getElementById('indicaciones').value,
-            recipe: document.getElementById('recipe').value
+            examenes: document.getElementById('examenes').value
         };
 
-        if(!datos.nombre) return alert("Falta el nombre");
+        if(!d.nombre) return alert("Por favor, ingrese el nombre del paciente.");
 
-        try {
-            const res = await fetch('/guardar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
+        const res = await fetch('/guardar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(d)
+        });
 
-            if(res.ok) {
-                alert("✅ Guardado en base de datos.");
-                btn.style.background = "#4caf50";
-                btn.innerText = "✓ GUARDADO";
-                document.getElementById('btn-pdf').style.display = "block";
-            } else {
-                const err = await res.json();
-                alert("❌ ERROR DE LLAVE: " + err.message);
-            }
-        } catch(e) { alert("Error de conexión"); }
+        if(res.ok) {
+            generarPDF(d);
+            document.getElementById('preview').style.display = "block";
+            document.getElementById('btn-wa').style.display = "block";
+            alert("✅ Guardado y PDF generado con éxito.");
+        } else {
+            alert("❌ Error al guardar. Verifique la conexión.");
+        }
     }
 
-    // 2. GENERAR PDF Y MOSTRAR PREVIA
-    function generarYRevisarPDF() {
+    function generarPDF(d) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
-        const nom = document.getElementById('pac_nom').value;
-        const ind = document.getElementById('indicaciones').value;
+        const fecha = new Date().toLocaleDateString();
 
-        // Configuración estética del PDF
+        // Encabezado
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(18);
         doc.text("CONSULTA MÉDICA", 105, 20, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text(`Paciente: ${nom}`, 20, 40);
-        doc.text("Indicaciones:", 20, 60);
-        doc.text(doc.splitTextToSize(ind, 170), 20, 70);
-
-        // Mostrar previsualización en pantalla
-        document.getElementById('preview').style.display = "block";
-        document.getElementById('preview-content').innerHTML = `
-            <b>Paciente:</b> ${nom}<br>
-            <b>Indicaciones:</b> ${ind.substring(0, 100)}...
-        `;
-
-        // Descarga el PDF automáticamente
-        doc.save(`Consulta_${nom}.pdf`);
         
-        // Habilita el paso final
-        document.getElementById('btn-wa').style.display = "block";
+        doc.setFontSize(11);
+        doc.text(`Fecha: ${fecha}`, 160, 30);
+
+        // Datos del Paciente
+        doc.setFontSize(12);
+        doc.text(`Nombre del Paciente: ${d.nombre}`, 20, 45);
+        doc.text(`Cédula: ${d.cedula}`, 20, 55);
+
+        // Secciones
+        let y = 70;
+        const secciones = [
+            { t: "INFORME CLÍNICO:", c: d.informe },
+            { t: "RÉCIPE:", c: d.recipe },
+            { t: "INDICACIONES:", c: d.indicaciones },
+            { t: "EXÁMENES SOLICITADOS:", c: d.examenes }
+        ];
+
+        secciones.forEach(s => {
+            if(s.c) {
+                doc.setFont("helvetica", "bold");
+                doc.text(s.t, 20, y);
+                y += 7;
+                doc.setFont("helvetica", "normal");
+                const lineas = doc.splitTextToSize(s.c, 170);
+                doc.text(lineas, 20, y);
+                y += (lineas.length * 7) + 10;
+            }
+        });
+
+        // Espacio para Sello y Firma
+        doc.setDrawColor(0);
+        doc.line(120, 260, 180, 260); // Línea para firma
+        doc.setFontSize(10);
+        doc.text("Firma y Sello Húmedo", 150, 265, { align: 'center' });
+
+        doc.save(`Consulta_${d.nombre.replace(/ /g, "_")}.pdf`);
     }
 
-    // 3. ENVIAR WHATSAPP (Solo tras revisión)
     function enviarWhatsApp() {
-        const tel = document.getElementById('pac_tel').value;
         const nom = document.getElementById('pac_nom').value;
-        const ind = document.getElementById('indicaciones').value;
-
-        if(!tel) return alert("Debe ingresar un número de WhatsApp");
-
-        const msj = `*HOLA ${nom.toUpperCase()}*\nAdjunto envío su informe médico.\n\n*INDICACIONES:*\n${ind}`;
-        const url = `https://wa.me/${tel.replace(/\D/g, '')}?text=${encodeURIComponent(msj)}`;
-        
-        window.open(url, '_blank');
+        const msj = `*VOZMÉDICA PRO*\n\nHola ${nom}, adjunto envío su informe y recipe médico en PDF.`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msj)}`, '_blank');
     }
 </script>
 </body>
