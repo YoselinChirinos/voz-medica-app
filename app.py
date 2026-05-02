@@ -19,7 +19,7 @@ def login():
 @app.route('/')
 def index():
     if not session.get('doctor_auth'):
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
     return render_template('index.html')
 
 @app.route('/logout')
