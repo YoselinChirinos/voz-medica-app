@@ -94,11 +94,50 @@
     }
 
     function distribuirCampos(t) {
-        const triggers = [
-            { k: "nombre", id: "nombre_paciente" }, { k: "cédula", id: "cedula" },
-            { k: "informe", id: "informe" }, { k: "récipe", id: "recipe" },
-            { k: "indicaciones", id: "indicaciones" }, { k: "exámenes", id: "examenes" }
-        ];
+    // Función para comparar palabras ignorando tildes y mayúsculas
+    const limpiar = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    
+    const textoOriginal = t.trim();
+    const textoBusqueda = limpiar(textoOriginal);
+
+    const triggers = [
+        { k: "nombre", id: "nombre_paciente" },
+        { k: "cedula", id: "cedula" },
+        { k: "telefono", id: "telefono" },
+        { k: "informe", id: "informe" },
+        { k: "recipe", id: "recipe" },
+        { k: "indicaciones", id: "indicaciones" },
+        { k: "examenes", id: "examenes" },
+        { k: "laboratorio", id: "examenes" }
+    ];
+
+    triggers.forEach(trig => {
+        const claveLimpa = limpiar(trig.k);
+        
+        if (textoBusqueda.includes(claveLimpa)) {
+            // Buscamos dónde empieza el contenido después de la palabra clave
+            let indiceInicio = textoBusqueda.indexOf(claveLimpa) + claveLimpa.length;
+            let valor = textoOriginal.substring(indiceInicio).trim();
+            
+            // Si el doctor dijo otra palabra clave después, cortamos el texto ahí
+            triggers.forEach(otro => {
+                const otraClave = limpiar(otro.k);
+                const valorLimpio = limpiar(valor);
+                if (valorLimpio.includes(otraClave)) {
+                    let indiceCorte = valorLimpio.indexOf(otraClave);
+                    valor = valor.substring(0, indiceCorte).trim();
+                }
+            });
+
+            if (valor.length > 0) {
+                const el = document.getElementById(trig.id);
+                // Si el campo ya tiene texto, añadimos un espacio y luego el nuevo dictado
+                let textoFinal = valor.charAt(0).toUpperCase() + valor.slice(1);
+                el.value = (el.value ? el.value + " " : "") + textoFinal;
+            }
+        }
+    });
+}
         triggers.forEach(trig => {
             if (t.includes(trig.k)) {
                 let valor = t.split(trig.k)[1].trim();
@@ -107,8 +146,7 @@
                 el.value = (el.value ? el.value + " " : "") + valor.charAt(0).toUpperCase() + valor.slice(1);
             }
         });
-    }
-
+    
     function generarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
