@@ -4,67 +4,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VozMédica Pro - Consola de Dictado</title>
-    <!-- Librería para generar el PDF -->
+    <!-- Librería para generación de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
-        :root { --primary: #0277bd; --secondary: #2e7d32; --warning: #f39c12; --danger: #c62828; --bg: #f0f4f8; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        :root { 
+            --primary: #0277bd; 
+            --secondary: #2e7d32; 
+            --warning: #f39c12; 
+            --danger: #c62828; 
+            --bg: #f0f4f8; 
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 20px; 
+        }
+
+        .container { 
+            max-width: 900px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+        }
+
         h1 { color: var(--primary); text-align: center; margin-bottom: 30px; }
         
-        /* Sección de Control de Voz */
-        .mic-box { text-align: center; padding: 20px; border: 2px dashed #ccc; border-radius: 15px; margin-bottom: 20px; background: #fafafa; }
-        .btn-mic { background: var(--danger); color: white; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; cursor: pointer; transition: 0.3s; }
-        .btn-mic.recording { background: var(--secondary); animation: pulse 1.5s infinite; }
+        /* Consola de Voz */
+        .mic-box { 
+            text-align: center; 
+            padding: 20px; 
+            border: 2px dashed var(--primary); 
+            border-radius: 15px; 
+            margin-bottom: 20px; 
+            background: #fafafa; 
+        }
+
+        .btn-mic { 
+            background: var(--danger); 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            width: 70px; 
+            height: 70px; 
+            font-size: 30px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+        }
+
+        .btn-mic.recording { 
+            background: var(--secondary); 
+            animation: pulse 1.5s infinite; 
+        }
+
         #status { font-weight: bold; margin-top: 10px; color: #555; }
         #interino { font-style: italic; color: #888; min-height: 24px; margin-top: 5px; }
         
-        /* Formulario */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        /* Formulario dinámico */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .full { grid-column: span 2; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; color: var(--primary); font-size: 14px; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        textarea { height: 90px; resize: none; }
+        
+        label { 
+            font-weight: bold; 
+            display: block; 
+            margin-bottom: 5px; 
+            color: var(--primary); 
+            font-size: 14px; 
+            text-transform: uppercase;
+        }
 
-        /* Botones de Acción */
-        .action-bar { display: flex; gap: 10px; margin-top: 25px; }
-        .btn-action { border: none; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; }
-        .btn-save { flex: 2; background: var(--secondary); }
+        input, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 15px; 
+            background: #fff;
+        }
+
+        textarea { height: 100px; resize: none; }
+
+        /* Botones Inferiores */
+        .action-bar { display: flex; gap: 15px; margin-top: 30px; }
+        
+        .btn-action { 
+            flex: 1; 
+            border: none; 
+            padding: 18px; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            color: white; 
+        }
+
+        .btn-save { background: var(--secondary); }
         .btn-save:hover { background: #1b5e20; }
         .btn-save:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-correct { flex: 1; background: var(--warning); }
-        .btn-correct:hover { background: #d35400; }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); } 
+            70% { box-shadow: 0 0 0 15px rgba(46, 125, 50, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } 
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🩺 Consola VozMédica Pro</h1>
+    <h1>🩺 VozMédica Pro</h1>
     
     <div class="mic-box">
         <button id="btn-mic" class="btn-mic" onclick="toggleMic()">🎤</button>
-        <div id="status">Presiona para iniciar dictado</div>
+        <div id="status">Haz clic para dictar</div>
         <div id="interino"></div>
     </div>
 
     <div class="grid">
-        <div><label>Nombre del Paciente:</label><input type="text" id="pac_nom" placeholder="Dicta 'Nombre...'"></div>
-        <div><label>Cédula:</label><input type="text" id="pac_ced" placeholder="Dicta 'Cédula...'"></div>
-        <div><label>WhatsApp (con código país):</label><input type="text" id="pac_tel" placeholder="Ej: 584141234567"></div>
-        <div><label>Próxima Cita:</label><input type="text" id="regresar" placeholder="Dicta 'Cita...'"></div>
+        <div>
+            <label>Nombre del Paciente:</label>
+            <input type="text" id="pac_nom" placeholder="Diga 'Nombre...'">
+        </div>
+        <div>
+            <label>Cédula:</label>
+            <input type="text" id="pac_ced" placeholder="Diga 'Cédula...'">
+        </div>
+        <div>
+            <label>WhatsApp:</label>
+            <input type="text" id="pac_tel" placeholder="Diga 'WhatsApp...'">
+        </div>
+        <div>
+            <label>Próxima Cita:</label>
+            <input type="text" id="regresar" placeholder="Diga 'Cita...'">
+        </div>
         
-        <div class="full"><label>Informe Clínico:</label><textarea id="informe" placeholder="Dicta 'Informe...'"></textarea></div>
-        <div class="full"><label>Récipe (Medicamentos):</label><textarea id="recipe" placeholder="Dicta 'Récipe...'"></textarea></div>
-        <div class="full"><label>Indicaciones de Uso:</label><textarea id="indicaciones" placeholder="Dicta 'Indicaciones...'"></textarea></div>
-        <div class="full"><label>Exámenes Solicitados:</label><textarea id="examenes" placeholder="Dicta 'Exámenes...'"></textarea></div>
+        <div class="full">
+            <label>Informe Clínico:</label>
+            <textarea id="informe" placeholder="Diga 'Informe...'"></textarea>
+        </div>
+        <div class="full">
+            <label>Récipe (Medicamentos):</label>
+            <textarea id="recipe" placeholder="Diga 'Récipe...'"></textarea>
+        </div>
+        <div class="full">
+            <label>Indicaciones de Uso:</label>
+            <textarea id="indicaciones" placeholder="Diga 'Indicaciones...'"></textarea>
+        </div>
+        <div class="full">
+            <label>Exámenes Solicitados:</label>
+            <textarea id="examenes" placeholder="Diga 'Exámenes...'"></textarea>
+        </div>
     </div>
 
     <div class="action-bar">
-        <button class="btn-action btn-correct" onclick="corregirUltimo()">✏️ Corregir</button>
-        <button id="btn-main" class="btn-action btn-save" onclick="flujoCompleto()">🚀 Guardar, Generar PDF y WhatsApp</button>
+        <button id="btn-main" class="btn-action btn-save" onclick="enviarProcesar()">
+            🚀 GUARDAR Y GENERAR DOCUMENTOS
+        </button>
     </div>
 </div>
 
@@ -72,7 +173,7 @@
     let recognition;
     let isRecording = false;
 
-    // Inicializar reconocimiento de voz
+    // Configuración del Reconocimiento de Voz
     if ('webkitSpeechRecognition' in window) {
         recognition = new webkitSpeechRecognition();
         recognition.continuous = true;
@@ -80,60 +181,75 @@
         recognition.lang = 'es-ES';
 
         recognition.onresult = (event) => {
-            let textoInterino = "";
+            let textoTemporal = "";
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                let transcript = event.results[i][0].transcript.toLowerCase();
                 if (event.results[i].isFinal) {
-                    procesarComando(event.results[i][0].transcript.toLowerCase());
+                    distribuirTexto(transcript);
                 } else {
-                    textoInterino += event.results[i][0].transcript;
+                    textoTemporal += transcript;
                 }
             }
-            document.getElementById('interino').innerText = textoInterino;
+            document.getElementById('interino').innerText = textoTemporal;
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Error de reconocimiento:", event.error);
+            stopMic();
         };
     }
 
     function toggleMic() {
-        const btn = document.getElementById('btn-mic');
-        if (!isRecording) {
-            recognition.start();
-            btn.classList.add('recording');
-            document.getElementById('status').innerText = "Escuchando... diga el nombre del campo";
-            isRecording = true;
-        } else {
-            recognition.stop();
-            btn.classList.remove('recording');
-            document.getElementById('status').innerText = "Micrófono apagado";
-            isRecording = false;
-        }
+        if (!isRecording) startMic();
+        else stopMic();
     }
 
-    function corregirUltimo() {
+    function startMic() {
+        recognition.start();
+        isRecording = true;
+        document.getElementById('btn-mic').classList.add('recording');
+        document.getElementById('status').innerText = "Escuchando... use palabras clave (Nombre, Cédula, Informe...)";
+    }
+
+    function stopMic() {
+        recognition.stop();
+        isRecording = false;
+        document.getElementById('btn-mic').classList.remove('recording');
+        document.getElementById('status').innerText = "Micrófono apagado";
         document.getElementById('interino').innerText = "";
-        alert("Modo corrección: Vuelva a dictar el campo que desea cambiar.");
-        if (!isRecording) toggleMic();
     }
 
-    function procesarComando(t) {
-        const mapeo = {
-            "nombre": "pac_nom", "cédula": "pac_ced", "cedula": "pac_ced",
-            "whatsapp": "pac_tel", "informe": "informe", "récipe": "recipe", 
-            "recipe": "recipe", "indicaciones": "indicaciones", "exámenes": "examenes",
-            "examenes": "examenes", "cita": "regresar"
-        };
-        
-        for (const [clave, id] of Object.entries(mapeo)) {
-            if (t.includes(clave)) {
-                let valor = t.split(clave)[1].trim();
-                if (valor) {
-                    const campo = document.getElementById(id);
-                    // Formateo básico: primera letra mayúscula
-                    campo.value = valor.charAt(0).toUpperCase() + valor.slice(1);
+    // LÓGICA DE DISTRIBUCIÓN EXPERTA (Evita el error de image_941d28.png)
+    function distribuirTexto(t) {
+        const mapaComandos = [
+            { key: "nombre", id: "pac_nom" },
+            { key: "cédula", id: "pac_ced" },
+            { key: "cedula", id: "pac_ced" },
+            { key: "whatsapp", id: "pac_tel" },
+            { key: "informe", id: "informe" },
+            { key: "récipe", id: "recipe" },
+            { key: "recipe", id: "recipe" },
+            { key: "indicaciones", id: "indicaciones" },
+            { key: "exámenes", id: "examenes" },
+            { key: "examenes", id: "examenes" },
+            { key: "cita", id: "regresar" }
+        ];
+
+        mapaComandos.forEach(cmd => {
+            if (t.includes(cmd.key)) {
+                // Extrae solo lo que está DESPUÉS de la palabra clave
+                let fragmento = t.split(cmd.key)[1].trim();
+                if (fragmento) {
+                    let campo = document.getElementById(cmd.id);
+                    // Formateo: Primera letra en mayúscula
+                    campo.value = fragmento.charAt(0).toUpperCase() + fragmento.slice(1);
                 }
             }
-        }
+        });
     }
 
-    async function flujoCompleto() {
+    // FLUJO DE GUARDADO Y SALIDA
+    async function enviarProcesar() {
         const btn = document.getElementById('btn-main');
         const datos = {
             nombre: document.getElementById('pac_nom').value,
@@ -146,37 +262,39 @@
             cita: document.getElementById('regresar').value
         };
 
-        if (!datos.nombre) return alert("Por favor, ingrese al menos el nombre del paciente.");
+        if (!datos.nombre) return alert("Error: Debe ingresar al menos el nombre del paciente.");
 
         btn.disabled = true;
-        btn.innerText = "⌛ Guardando en la nube...";
+        btn.innerText = "⌛ PROCESANDO...";
 
         try {
-            // 1. Enviar a app.py para guardar en Supabase
+            // 1. Guardar en Base de Datos
             const response = await fetch('/guardar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datos)
             });
 
-            const result = await response.json();
-
             if (response.ok) {
-                // 2. Si guardó bien, genera archivos y limpia
+                // 2. Generar PDF Local
                 generarPDF(datos);
-                enviarWA(datos);
-                alert("✅ Éxito: Datos guardados, PDF generado y WhatsApp enviado.");
                 
-                // Limpia la pantalla para el próximo paciente
-                location.reload(); 
+                // 3. Abrir WhatsApp
+                enviarWhatsApp(datos);
+
+                alert("✅ PROCESO COMPLETADO:\n1. Datos guardados en la nube.\n2. PDF generado.\n3. Chat de WhatsApp abierto.");
+                
+                // Limpiar formulario para el siguiente paciente
+                location.reload();
             } else {
-                alert("❌ Error de Base de Datos: " + result.message);
+                const err = await response.json();
+                alert("❌ Error en Servidor: " + err.message);
             }
         } catch (error) {
-            alert("❌ Error crítico: No se pudo conectar con el servidor.");
+            alert("❌ Error Crítico: No hay conexión con el servidor.");
         } finally {
             btn.disabled = false;
-            btn.innerText = "🚀 Guardar, Generar PDF y WhatsApp";
+            btn.innerText = "🚀 GUARDAR Y GENERAR DOCUMENTOS";
         }
     }
 
@@ -184,27 +302,27 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        doc.setFontSize(18);
-        doc.text("INFORME MÉDICO", 105, 20, { align: 'center' });
+        doc.setFont("helvetica", "bold");
+        doc.text("INFORME MÉDICO Y RÉCIPE", 105, 20, { align: 'center' });
         
         doc.setFontSize(12);
-        doc.text(`Paciente: ${d.nombre}`, 20, 40);
-        doc.text(`Cédula: ${d.cedula}`, 20, 50);
-        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 60);
+        doc.text(`PACIENTE: ${d.nombre}`, 20, 40);
+        doc.text(`CÉDULA: ${d.cedula}`, 20, 50);
+        doc.text(`FECHA: ${new Date().toLocaleDateString()}`, 20, 60);
         
         doc.text("INDICACIONES:", 20, 80);
-        doc.setFontSize(10);
-        const splitText = doc.splitTextToSize(d.indicaciones || "Sin indicaciones.", 170);
-        doc.text(splitText, 20, 90);
+        doc.setFont("helvetica", "normal");
+        const lines = doc.splitTextToSize(d.indicaciones || "N/A", 170);
+        doc.text(lines, 20, 90);
         
-        doc.save(`Consulta_${d.nombre}.pdf`);
+        doc.save(`Consulta_${d.nombre.replace(/ /g, "_")}.pdf`);
     }
 
-    function enviarWA(d) {
+    function enviarWhatsApp(d) {
         if (!d.telefono) return;
-        const texto = `*VOZMÉDICA PRO*\n\nHola *${d.nombre}*, aquí tus indicaciones:\n${d.indicaciones}\n\n*Próxima cita:* ${d.cita}`;
-        const url = `https://wa.me/${d.telefono.replace(/\D/g,'')}?text=${encodeURIComponent(texto)}`;
-        window.open(url, '_blank');
+        const msg = `*VOZMÉDICA PRO*\n\nHola *${d.nombre}*,\nAdjunto sus indicaciones:\n\n${d.indicaciones}\n\n*Próxima Cita:* ${d.cita}`;
+        const cleanPhone = d.telefono.replace(/\D/g, '');
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 </script>
 </body>
