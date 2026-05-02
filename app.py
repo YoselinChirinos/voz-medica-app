@@ -5,10 +5,10 @@ from supabase import create_client, Client
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_voz_medica_2026'
 
-# SEGURIDAD: Credenciales de acceso
+# SEGURIDAD REFORZADA
 PASSWORD_MEDICO = "medico20262620"
 
-# CONFIGURACIÓN DE SUPABASE
+# CONEXIÓN A SUPABASE
 SUPABASE_URL = "https://gzlccjdaxdxrrbaqemgo.supabase.co"
 SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -17,10 +17,16 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 def login():
     if request.method == 'POST':
         if request.form.get('password') == PASSWORD_MEDICO:
+            session.permanent = True
             session['autenticado'] = True
             return redirect(url_for('index'))
         return render_template('login.html', error="Contraseña incorrecta")
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route('/')
 def index():
@@ -31,10 +37,9 @@ def index():
 @app.route('/guardar', methods=['POST'])
 def guardar_datos():
     if not session.get('autenticado'):
-        return jsonify({"status": "error", "message": "No autorizado"}), 401
+        return jsonify({"status": "error", "message": "Sesión expirada"}), 401
     try:
         data = request.json
-        # Mapeo exacto para la tabla en Render/Supabase
         registro = {
             "nombre_paciente": data.get('nombre'),
             "cedula": data.get('cedula'),
