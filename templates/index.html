@@ -23,7 +23,6 @@
         .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; min-width: 150px; }
         .btn-pdf { background: var(--blue); }
         .btn-wa { background: var(--green); }
-        .btn-reset { background: #616161; }
     </style>
 </head>
 <body>
@@ -42,7 +41,7 @@
     <div class="form-grid">
         <div><label>Nombre:</label><input type="text" id="nombre_paciente"></div>
         <div><label>Cédula:</label><input type="text" id="cedula"></div>
-        <div class="full"><label>Teléfono Paciente:</label><input type="tel" id="telefono" placeholder="Ej: 584120000000"></div>
+        <div class="full"><label>Teléfono Paciente:</label><input type="tel" id="telefono" value="+58" placeholder="Ej: +584120000000"></div>
         
         <div class="full">
             <div class="field-header"><label>Informe Médico:</label><span class="btn-clear-small" onclick="document.getElementById('informe').value=''">Borrar</span></div>
@@ -63,8 +62,8 @@
     </div>
 
     <div class="actions">
-        <button class="btn btn-pdf" onclick="procesarYGenerar()">📄 PDF Y LIMPIAR</button>
-        <button class="btn btn-wa" onclick="enviarWhatsApp()">📲 ENVIAR WA Y LIMPIAR</button>
+        <button class="btn btn-pdf" onclick="visualizarPDF()">📄 VISUALIZAR PDF</button>
+        <button class="btn btn-wa" onclick="enviarWhatsApp()">📲 ENVIAR POR WHATSAPP</button>
     </div>
 </div>
 
@@ -94,60 +93,46 @@
     }
 
     function distribuirCampos(t) {
-    // Función para comparar palabras ignorando tildes y mayúsculas
-    const limpiar = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    
-    const textoOriginal = t.trim();
-    const textoBusqueda = limpiar(textoOriginal);
+        const limpiar = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const textoOriginal = t.trim();
+        const textoBusqueda = limpiar(textoOriginal);
 
-    const triggers = [
-        { k: "nombre", id: "nombre_paciente" },
-        { k: "cedula", id: "cedula" },
-        { k: "telefono", id: "telefono" },
-        { k: "informe", id: "informe" },
-        { k: "recipe", id: "recipe" },
-        { k: "indicaciones", id: "indicaciones" },
-        { k: "examenes", id: "examenes" },
-        { k: "laboratorio", id: "examenes" }
-    ];
+        const triggers = [
+            { k: "nombre", id: "nombre_paciente" },
+            { k: "cedula", id: "cedula" },
+            { k: "telefono", id: "telefono" },
+            { k: "informe", id: "informe" },
+            { k: "recipe", id: "recipe" },
+            { k: "indicaciones", id: "indicaciones" },
+            { k: "examenes", id: "examenes" },
+            { k: "laboratorio", id: "examenes" }
+        ];
 
-    triggers.forEach(trig => {
-        const claveLimpa = limpiar(trig.k);
-        
-        if (textoBusqueda.includes(claveLimpa)) {
-            // Buscamos dónde empieza el contenido después de la palabra clave
-            let indiceInicio = textoBusqueda.indexOf(claveLimpa) + claveLimpa.length;
-            let valor = textoOriginal.substring(indiceInicio).trim();
-            
-            // Si el doctor dijo otra palabra clave después, cortamos el texto ahí
-            triggers.forEach(otro => {
-                const otraClave = limpiar(otro.k);
-                const valorLimpio = limpiar(valor);
-                if (valorLimpio.includes(otraClave)) {
-                    let indiceCorte = valorLimpio.indexOf(otraClave);
-                    valor = valor.substring(0, indiceCorte).trim();
-                }
-            });
-
-            if (valor.length > 0) {
-                const el = document.getElementById(trig.id);
-                // Si el campo ya tiene texto, añadimos un espacio y luego el nuevo dictado
-                let textoFinal = valor.charAt(0).toUpperCase() + valor.slice(1);
-                el.value = (el.value ? el.value + " " : "") + textoFinal;
-            }
-        }
-    });
-}
         triggers.forEach(trig => {
-            if (t.includes(trig.k)) {
-                let valor = t.split(trig.k)[1].trim();
-                triggers.forEach(o => { if(valor.includes(o.k)) valor = valor.split(o.k)[0].trim(); });
-                const el = document.getElementById(trig.id);
-                el.value = (el.value ? el.value + " " : "") + valor.charAt(0).toUpperCase() + valor.slice(1);
+            const claveLimpa = limpiar(trig.k);
+            if (textoBusqueda.includes(claveLimpa)) {
+                let indiceInicio = textoBusqueda.indexOf(claveLimpa) + claveLimpa.length;
+                let valor = textoOriginal.substring(indiceInicio).trim();
+                
+                triggers.forEach(otro => {
+                    const otraClave = limpiar(otro.k);
+                    const valorLimpio = limpiar(valor);
+                    if (valorLimpio.includes(otraClave)) {
+                        let indiceCorte = valorLimpio.indexOf(otraClave);
+                        valor = valor.substring(0, indiceCorte).trim();
+                    }
+                });
+
+                if (valor.length > 0) {
+                    const el = document.getElementById(trig.id);
+                    let textoFinal = valor.charAt(0).toUpperCase() + valor.slice(1);
+                    el.value = (el.value ? el.value + " " : "") + textoFinal;
+                }
             }
         });
-    
-    function generarPDF() {
+    }
+
+    function visualizarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const fecha = new Date().toLocaleDateString();
@@ -167,40 +152,37 @@
             doc.line(20, 32, 190, 32);
             doc.text(doc.splitTextToSize(s.c, 170), 20, 45);
         });
-        doc.save(`Consulta_${nom}.pdf`);
+
+        const string = doc.output('bloburl');
+        window.open(string, '_blank');
+
+        setTimeout(() => {
+            if (confirm("¿Desea limpiar la pantalla para el siguiente paciente?")) {
+                limpiarPantalla();
+            }
+        }, 2000);
+    }
+
+    function enviarWhatsApp() {
+        let tel = document.getElementById('telefono').value.trim();
+        tel = tel.replace(/\s+/g, '').replace(/-/g, '');
+
+        if (!tel || tel === "+58") return alert("Por favor, ingrese un número de teléfono válido.");
+        
+        const msg = encodeURIComponent("Hola, le envío los documentos de su consulta médica.");
+        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${msg}`, '_blank');
+
+        setTimeout(() => {
+            if (confirm("¿Se abrió el chat? ¿Desea limpiar la pantalla ahora?")) {
+                limpiarPantalla();
+            }
+        }, 2000);
     }
 
     function limpiarPantalla() {
         const inputs = document.querySelectorAll('input, textarea');
         inputs.forEach(i => i.value = '');
-        alert("Pantalla lista para el siguiente paciente.");
     }
-
-    function procesarYGenerar() {
-    generarPDF(); // Genera el PDF primero
-    
-    // En lugar de borrar automático, preguntamos al doctor
-    setTimeout(() => {
-        if (confirm("¿PDF generado correctamente? ¿Desea limpiar la pantalla para el siguiente paciente?")) {
-            limpiarPantalla();
-        }
-    }, 1000);
-}
-
-function enviarWhatsApp() {
-    const tel = document.getElementById('telefono').value;
-    if (!tel) return alert("Falta el número de teléfono del paciente.");
-    
-    const msg = encodeURIComponent("Hola, le envío los documentos de su consulta médica.");
-    window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
-
-    // Preguntamos antes de borrar para que pueda corregir el número si falló
-    setTimeout(() => {
-        if (confirm("¿Se abrió el chat de WhatsApp? ¿Desea limpiar la pantalla ahora?")) {
-            limpiarPantalla();
-        }
-    }, 1500);
-}
 </script>
 </body>
 </html>
