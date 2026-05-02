@@ -3,14 +3,14 @@ import os
 from supabase import create_client, Client
 
 app = Flask(__name__)
+# Mantén tu clave secreta para la seguridad de la sesión
 app.secret_key = 'clave_secreta_voz_medica_2026'
 
-# SEGURIDAD MANTENIDA
+# SEGURIDAD EXIGIDA
 PASSWORD_MEDICO = "medico20262620"
 
-# CONFIGURACIÓN DE SUPABASE
+# CONFIGURACIÓN DE SUPABASE (Verificada con tu imagen)
 SUPABASE_URL = "https://gzlccjdaxdxrrbaqemgo.supabase.co"
-# USA LA CLAVE ANON PUBLIC AQUÍ
 SUPABASE_KEY = "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -18,6 +18,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 def login():
     if request.method == 'POST':
         if request.form.get('password') == PASSWORD_MEDICO:
+            session.permanent = True
             session['autenticado'] = True
             return redirect(url_for('index'))
         return render_template('login.html', error="Contraseña incorrecta")
@@ -32,24 +33,27 @@ def index():
 @app.route('/guardar', methods=['POST'])
 def guardar_datos():
     if not session.get('autenticado'):
-        return jsonify({"status": "error", "message": "No autorizado"}), 401
+        return jsonify({"status": "error", "message": "Acceso denegado"}), 401
+    
     try:
         data = request.json
-        # IMPORTANTE: Estos nombres deben ser IGUALES a los de tu tabla en Supabase
+        # MAPEADO EXACTO SEGÚN TU IMAGEN DE SUPABASE
         registro = {
-            "nombre_paciente": data.get('nombre'),
-            "cedula": data.get('cedula'),
-            "informe": data.get('informe'),
-            "recipe": data.get('recipe'),
-            "indicaciones": data.get('indicaciones'),
-            "examenes": data.get('examenes')
+            "nombre_paciente": data.get('nombre'), # Coincide con tu tabla
+            "cedula": data.get('cedula'),          # Coincide con tu tabla
+            "informe": data.get('informe'),        # Coincide con tu tabla
+            "recipe": data.get('recipe'),          # Coincide con tu tabla
+            "indicaciones": data.get('indicaciones'), # Coincide con tu tabla
+            "examenes": data.get('examenes')       # Coincide con tu tabla (sin acento)
         }
-        # Intentamos insertar en la tabla 'consultas'
+        
+        # Insertar en la tabla 'consultas'
         supabase.table('consultas').insert(registro).execute()
         return jsonify({"status": "success"}), 200
+
     except Exception as e:
-        # Esto nos dirá el error exacto en los logs de Render
-        print(f"Error detectado: {e}")
+        # Esto te dirá el error exacto en los logs de Render
+        print(f"Error técnico: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
