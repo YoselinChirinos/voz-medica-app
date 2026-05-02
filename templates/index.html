@@ -136,7 +136,8 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const fecha = new Date().toLocaleDateString();
-        const nom = document.getElementById('nombre_paciente').value || "Paciente";
+        const nom = document.getElementById('nombre_paciente').value || "No especificado";
+        const ci = document.getElementById('cedula').value || "No especificado";
 
         const secs = [
             { t: "INFORME MÉDICO", c: document.getElementById('informe').value },
@@ -147,10 +148,25 @@
 
         secs.forEach((s, i) => {
             if (i > 0) doc.addPage();
-            doc.setFontSize(14); doc.text(s.t, 105, 20, { align: 'center' });
-            doc.setFontSize(10); doc.text(`Fecha: ${fecha} | Paciente: ${nom}`, 20, 30);
-            doc.line(20, 32, 190, 32);
-            doc.text(doc.splitTextToSize(s.c, 170), 20, 45);
+            
+            // Encabezado del documento
+            doc.setFontSize(16);
+            doc.setTextColor(2, 119, 189); // Azul institucional
+            doc.text(s.t, 105, 20, { align: 'center' });
+            
+            // Datos del paciente en el orden solicitado
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Nombre del Paciente: ${nom}`, 20, 30);
+            doc.text(`Cédula de Identidad: ${ci}`, 20, 36);
+            doc.text(`Fecha: ${fecha}`, 20, 42);
+            
+            // Línea separadora
+            doc.setDrawColor(2, 119, 189);
+            doc.line(20, 45, 190, 45);
+            
+            // Contenido dictado
+            doc.text(doc.splitTextToSize(s.c, 170), 20, 55);
         });
 
         const string = doc.output('bloburl');
