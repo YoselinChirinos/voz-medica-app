@@ -177,16 +177,30 @@
     }
 
     function procesarYGenerar() {
-        generarPDF();
-        setTimeout(limpiarPantalla, 2000);
-    }
+    generarPDF(); // Genera el PDF primero
+    
+    // En lugar de borrar automático, preguntamos al doctor
+    setTimeout(() => {
+        if (confirm("¿PDF generado correctamente? ¿Desea limpiar la pantalla para el siguiente paciente?")) {
+            limpiarPantalla();
+        }
+    }, 1000);
+}
 
-    function enviarWhatsApp() {
-        const tel = document.getElementById('telefono').value;
-        if (!tel) return alert("Falta el número de teléfono.");
-        window.open(`https://wa.me/${tel}?text=Hola, envío documentos médicos.`, '_blank');
-        setTimeout(limpiarPantalla, 3000);
-    }
+function enviarWhatsApp() {
+    const tel = document.getElementById('telefono').value;
+    if (!tel) return alert("Falta el número de teléfono del paciente.");
+    
+    const msg = encodeURIComponent("Hola, le envío los documentos de su consulta médica.");
+    window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
+
+    // Preguntamos antes de borrar para que pueda corregir el número si falló
+    setTimeout(() => {
+        if (confirm("¿Se abrió el chat de WhatsApp? ¿Desea limpiar la pantalla ahora?")) {
+            limpiarPantalla();
+        }
+    }, 1500);
+}
 </script>
 </body>
 </html>
