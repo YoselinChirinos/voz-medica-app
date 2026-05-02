@@ -2,143 +2,152 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>VozMédica Pro - Sistema Directo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VozMédica Pro - Flujo Continuo</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --primary: #0277bd; --secondary: #2e7d32; --danger: #c62828; --bg: #f0f4f8; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); margin-bottom: 20px; padding-bottom: 10px; }
-        .mic-box { text-align: center; margin-bottom: 20px; border: 2px dashed var(--primary); padding: 15px; border-radius: 10px; }
-        .btn-mic { background: var(--danger); color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; cursor: pointer; }
-        .btn-mic.recording { background: var(--secondary); animation: pulse 1.5s infinite; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        :root { --blue: #0277bd; --green: #2e7d32; --red: #d32f2f; --gray: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--gray); margin: 0; padding: 10px; }
+        .app-container { max-width: 850px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--blue); padding-bottom: 10px; }
+        .mic-section { text-align: center; padding: 15px; background: #e3f2fd; border-radius: 10px; margin: 15px 0; }
+        .btn-mic { background: var(--red); color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; cursor: pointer; }
+        .btn-mic.active { background: var(--green); box-shadow: 0 0 10px var(--green); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .full { grid-column: span 2; }
-        label { font-weight: bold; color: var(--primary); display: block; margin-top: 10px; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        textarea { height: 100px; }
-        .action-bar { display: flex; gap: 10px; margin-top: 25px; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
-        .btn-save { background: var(--primary); }
-        .btn-wa { background: var(--secondary); display: none; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); } }
+        .field-header { display: flex; justify-content: space-between; align-items: center; }
+        .btn-clear-small { font-size: 10px; color: var(--red); cursor: pointer; border: 1px solid var(--red); padding: 2px 5px; border-radius: 4px; }
+        label { font-weight: bold; color: var(--blue); }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; min-width: 150px; }
+        .btn-pdf { background: var(--blue); }
+        .btn-wa { background: var(--green); }
+        .btn-reset { background: #616161; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app-container">
     <div class="header">
-        <h2 style="margin:0; color: var(--primary);">🩺 VozMédica Pro</h2>
-        <a href="/logout" style="text-decoration:none; color:grey; font-size:12px;">Cerrar Sesión</a>
+        <h2 style="margin:0; color:var(--blue);">🩺 VozMédica Pro</h2>
+        <button class="btn-clear-small" onclick="limpiarPantalla()">Reiniciar Todo</button>
     </div>
 
-    <div class="mic-box">
-        <button id="btn-mic" class="btn-mic" onclick="toggleMic()">🎤</button>
-        <p id="status">Diga: "Nombre...", "Cédula...", "Informe..."</p>
+    <div class="mic-section">
+        <button id="mic-btn" class="btn-mic" onclick="toggleSpeech()">🎤</button>
+        <p id="mic-status" style="margin:5px 0 0 0; font-size:14px;">Toque para dictar</p>
     </div>
 
-    <div class="grid">
-        <div><label>Nombre del Paciente:</label><input type="text" id="pac_nom"></div>
-        <div><label>Cédula:</label><input type="text" id="pac_ced"></div>
-        <div class="full"><label>Informe Clínico:</label><textarea id="informe"></textarea></div>
-        <div class="full"><label>Récipe:</label><textarea id="recipe"></textarea></div>
-        <div class="full"><label>Indicaciones:</label><textarea id="indicaciones"></textarea></div>
-        <div class="full"><label>Exámenes:</label><textarea id="examenes"></textarea></div>
+    <div class="form-grid">
+        <div><label>Nombre:</label><input type="text" id="nombre_paciente"></div>
+        <div><label>Cédula:</label><input type="text" id="cedula"></div>
+        <div class="full"><label>Teléfono Paciente:</label><input type="tel" id="telefono" placeholder="Ej: 584120000000"></div>
+        
+        <div class="full">
+            <div class="field-header"><label>Informe Médico:</label><span class="btn-clear-small" onclick="document.getElementById('informe').value=''">Borrar</span></div>
+            <textarea id="informe"></textarea>
+        </div>
+        <div class="full">
+            <div class="field-header"><label>Récipe:</label><span class="btn-clear-small" onclick="document.getElementById('recipe').value=''">Borrar</span></div>
+            <textarea id="recipe"></textarea>
+        </div>
+        <div class="full">
+            <div class="field-header"><label>Indicaciones:</label><span class="btn-clear-small" onclick="document.getElementById('indicaciones').value=''">Borrar</span></div>
+            <textarea id="indicaciones"></textarea>
+        </div>
+        <div class="full">
+            <div class="field-header"><label>Exámenes/Laboratorio:</label><span class="btn-clear-small" onclick="document.getElementById('examenes').value=''">Borrar</span></div>
+            <textarea id="examenes"></textarea>
+        </div>
     </div>
 
-    <div class="action-bar">
-        <button class="btn btn-save" onclick="guardarDirecto()">🚀 GUARDAR Y GENERAR PDF</button>
-        <button id="btn-wa" class="btn btn-wa" onclick="enviarWA()">📲 ENVIAR WHATSAPP</button>
+    <div class="actions">
+        <button class="btn btn-pdf" onclick="procesarYGenerar()">📄 PDF Y LIMPIAR</button>
+        <button class="btn btn-wa" onclick="enviarWhatsApp()">📲 ENVIAR WA Y LIMPIAR</button>
     </div>
 </div>
 
 <script>
-    let recognition;
-    let isRecording = false;
+    let recog;
+    let recording = false;
 
     if ('webkitSpeechRecognition' in window) {
-        recognition = new webkitSpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'es-ES';
+        recog = new webkitSpeechRecognition();
+        recog.continuous = true;
+        recog.interimResults = true;
+        recog.lang = 'es-ES';
 
-        recognition.onresult = (event) => {
+        recog.onresult = (event) => {
             let texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
-            if (event.results[event.results.length - 1].isFinal) procesarTexto(texto);
+            if (event.results[event.results.length - 1].isFinal) {
+                texto = texto.replace(/ punto/g, ".").replace(/ coma/g, ",").replace(/ y /g, ", ");
+                distribuirCampos(texto);
+            }
         };
     }
 
-    function toggleMic() {
-        if (!isRecording) { recognition.start(); isRecording = true; document.getElementById('btn-mic').classList.add('recording'); }
-        else { recognition.stop(); isRecording = false; document.getElementById('btn-mic').classList.remove('recording'); }
+    function toggleSpeech() {
+        const btn = document.getElementById('mic-btn');
+        if (!recording) { recog.start(); recording = true; btn.classList.add('active'); }
+        else { recog.stop(); recording = false; btn.classList.remove('active'); }
     }
 
-    function procesarTexto(t) {
-        const campos = [
-            { k: "nombre", id: "pac_nom" }, { k: "cédula", id: "pac_ced" }, { k: "cedula", id: "pac_ced" },
-            { k: "informe", id: "informe" }, { k: "récipe", id: "recipe" }, { k: "recipe", id: "recipe" },
-            { k: "indicaciones", id: "indicaciones" }, { k: "exámenes", id: "examenes" }, { k: "examenes", id: "examenes" }
+    function distribuirCampos(t) {
+        const triggers = [
+            { k: "nombre", id: "nombre_paciente" }, { k: "cédula", id: "cedula" },
+            { k: "informe", id: "informe" }, { k: "récipe", id: "recipe" },
+            { k: "indicaciones", id: "indicaciones" }, { k: "exámenes", id: "examenes" }
         ];
-        campos.forEach(c => {
-            if (t.includes(c.k)) {
-                let val = t.split(c.k)[1].trim();
-                campos.forEach(o => { if (val.includes(o.k)) val = val.split(o.k)[0].trim(); });
-                document.getElementById(c.id).value = val.charAt(0).toUpperCase() + val.slice(1);
+        triggers.forEach(trig => {
+            if (t.includes(trig.k)) {
+                let valor = t.split(trig.k)[1].trim();
+                triggers.forEach(o => { if(valor.includes(o.k)) valor = valor.split(o.k)[0].trim(); });
+                const el = document.getElementById(trig.id);
+                el.value = (el.value ? el.value + " " : "") + valor.charAt(0).toUpperCase() + valor.slice(1);
             }
         });
     }
 
-    async function guardarDirecto() {
-        const d = {
-            nombre_paciente: document.getElementById('pac_nom').value,
-            cedula: document.getElementById('pac_ced').value,
-            informe: document.getElementById('informe').value,
-            recipe: document.getElementById('recipe').value,
-            indicaciones: document.getElementById('indicaciones').value,
-            examenes: document.getElementById('examenes').value
-        };
-
-        if(!d.nombre_paciente) return alert("Falta el nombre");
-
-        try {
-            // CONEXIÓN DIRECTA A LA API DE SUPABASE
-            const res = await fetch("https://gzlccjdaxdxrrbaqemgo.supabase.co/rest/v1/consultas", {
-                method: "POST",
-                headers: {
-                    "apikey": "sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI",
-                    "Authorization": "Bearer sb_publishable_Qtzr0MnVTUuMa2_1KoEpFg_bomVqHXI",
-                    "Content-Type": "application/json",
-                    "Prefer": "return=minimal"
-                },
-                body: JSON.stringify(d)
-            });
-
-            if (res.ok) {
-                generarPDF(d);
-                document.getElementById('btn-wa').style.display = "block";
-                alert("✅ Guardado exitoso.");
-            } else {
-                alert("❌ Error en base de datos. Verifique RLS en Supabase.");
-            }
-        } catch (e) { alert("Error de conexión: " + e.message); }
-    }
-
-    function generarPDF(d) {
+    function generarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.text("CONSULTA MÉDICA", 105, 20, { align: 'center' });
-        doc.text(`Paciente: ${d.nombre_paciente}`, 20, 40);
-        doc.text(`Cédula: ${d.cedula}`, 20, 50);
-        doc.text(`Informe: ${d.informe}`, 20, 70);
-        // Espacio para sello
-        doc.rect(130, 240, 50, 30);
-        doc.text("Firma y Sello", 155, 275, { align: 'center' });
-        doc.save(`Consulta_${d.nombre_paciente}.pdf`);
+        const fecha = new Date().toLocaleDateString();
+        const nom = document.getElementById('nombre_paciente').value || "Paciente";
+
+        const secs = [
+            { t: "INFORME MÉDICO", c: document.getElementById('informe').value },
+            { t: "RÉCIPE", c: document.getElementById('recipe').value },
+            { t: "INDICACIONES", c: document.getElementById('indicaciones').value },
+            { t: "ORDEN DE EXÁMENES", c: document.getElementById('examenes').value }
+        ];
+
+        secs.forEach((s, i) => {
+            if (i > 0) doc.addPage();
+            doc.setFontSize(14); doc.text(s.t, 105, 20, { align: 'center' });
+            doc.setFontSize(10); doc.text(`Fecha: ${fecha} | Paciente: ${nom}`, 20, 30);
+            doc.line(20, 32, 190, 32);
+            doc.text(doc.splitTextToSize(s.c, 170), 20, 45);
+        });
+        doc.save(`Consulta_${nom}.pdf`);
     }
 
-    function enviarWA() {
-        const link = `https://wa.me/?text=Hola, envío su consulta médica.`;
-        window.open(link, '_blank');
+    function limpiarPantalla() {
+        const inputs = document.querySelectorAll('input, textarea');
+        inputs.forEach(i => i.value = '');
+        alert("Pantalla lista para el siguiente paciente.");
+    }
+
+    function procesarYGenerar() {
+        generarPDF();
+        setTimeout(limpiarPantalla, 2000);
+    }
+
+    function enviarWhatsApp() {
+        const tel = document.getElementById('telefono').value;
+        if (!tel) return alert("Falta el número de teléfono.");
+        window.open(`https://wa.me/${tel}?text=Hola, envío documentos médicos.`, '_blank');
+        setTimeout(limpiarPantalla, 3000);
     }
 </script>
 </body>
